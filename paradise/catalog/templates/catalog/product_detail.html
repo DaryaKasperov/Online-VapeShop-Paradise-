@@ -28,55 +28,70 @@
             <form method="post" action="{% url 'catalog:order_create' product.id %}">
                 {% csrf_token %}
 
-             <!-- Выбор вкуса (чекбоксы - можно выбрать несколько) -->
-{% if flavors %}
-<div class="mb-3">
-    <label class="form-label">Выберите вкусы (можно несколько)</label>
-    <div class="flavors-grid">
-        {% for flavor in flavors %}
-        <div class="flavor-option" data-flavor="{{ flavor }}">
-            <input type="checkbox" class="flavor-checkbox" id="flavor_{{ forloop.counter }}" value="{{ flavor }}">
-            <label for="flavor_{{ forloop.counter }}" class="flavor-label">
-                <span class="flavor-icon">🍭</span>
-                <span class="flavor-name">{{ flavor }}</span>
-                <span class="flavor-check"><i class="fas fa-check"></i></span>
-            </label>
-        </div>
-        {% endfor %}
-    </div>
-    <input type="hidden" name="flavors" id="selected_flavors" value="">
-    <small class="text-muted">Выберите один или несколько вкусов</small>
-</div>
-{% endif %}
+                <!-- Выбор вкуса -->
+                {% if flavors %}
+                <div class="mb-3">
+                    <label class="form-label">Выберите вкус</label>
+                    <div class="row row-cols-2 row-cols-sm-3 g-2">
+                        {% for flavor in flavors %}
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="flavor"
+                                       id="flavor_{{ forloop.counter }}" value="{{ flavor }}"
+                                       {% if forloop.first %}checked{% endif %}>
+                                <label class="form-check-label" for="flavor_{{ forloop.counter }}">
+                                    {{ flavor }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
 
-                <!-- Поле Telegram через форму Django -->
+                <!-- Выбор цвета -->
+                {% if colors %}
+                <div class="mb-3">
+                    <label class="form-label">Выберите цвет</label>
+                    <div class="row row-cols-2 row-cols-sm-3 g-2">
+                        {% for color in colors %}
+                        <div class="col">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="color"
+                                       id="color_{{ forloop.counter }}" value="{{ color }}"
+                                       {% if forloop.first %}checked{% endif %}>
+                                <label class="form-check-label" for="color_{{ forloop.counter }}">
+                                    {{ color }}
+                                </label>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Поле Telegram -->
                 <div class="mb-3 telegram-input-wrapper">
                     <label for="id_telegram" class="form-label">
                         <i class="fab fa-telegram-plane" style="color: var(--glow-blue);"></i>
-                        {{ order_form.telegram.label }}
+                        Ваш Telegram-ник
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">@</span>
-                        {{ order_form.telegram }}
+                        <input type="text" class="form-control" id="id_telegram" name="telegram"
+                               placeholder="ваш_никнейм" required>
                     </div>
-                    <!-- Ошибки валидации под полем -->
-                    {% if order_form.telegram.errors %}
-                        <div class="field-error">
-                            {% for error in order_form.telegram.errors %}
-                                {{ error|safe|linebreaksbr }}
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                    <small class="text-muted">{{ order_form.telegram.help_text }}</small>
+                    <small class="text-muted">Введите ваш Telegram-ник без @</small>
                 </div>
 
                 <!-- Поле комментария -->
                 <div class="mb-3">
                     <label for="id_comment" class="form-label">
                         <i class="fas fa-comment" style="color: var(--glow-blue);"></i>
-                        {{ order_form.comment.label }}
+                        Комментарий
                     </label>
-                    {{ order_form.comment }}
+                    <textarea class="form-control" id="id_comment" name="comment" rows="3"
+                              placeholder="Пожелания к заказу..."></textarea>
                 </div>
 
                 <button type="submit" class="btn btn-success w-100">

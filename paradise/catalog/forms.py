@@ -5,7 +5,7 @@ from .models import Product, Category, Order, Review
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['category', 'name', 'price', 'image', 'in_stock', 'flavors']
+        fields = ['category', 'name', 'price', 'image', 'in_stock', 'flavors', 'colors']
         widgets = {
             'category': forms.Select(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название товара'}),
@@ -17,6 +17,11 @@ class ProductForm(forms.ModelForm):
                 'rows': 5,
                 'placeholder': 'Введите каждый вкус с новой строки\nНапример:\nКлубника\nШоколад\nВаниль'
             }),
+            'colors': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 5,
+                'placeholder': 'Введите каждый цвет с новой строки\nНапример:\nЧерный\nБелый\nКрасный'
+            }),
         }
         labels = {
             'category': 'Категория',
@@ -25,12 +30,14 @@ class ProductForm(forms.ModelForm):
             'image': 'Изображение',
             'in_stock': 'В наличии',
             'flavors': 'Вкусы (каждый с новой строки)',
+            'colors': 'Цвета (каждый с новой строки)',
         }
+
 
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
-        fields = ['name', 'slug']  # ← Добавьте 'slug'
+        fields = ['name', 'slug']
         widgets = {
             'name': forms.TextInput(attrs={
                 'class': 'form-control',
@@ -39,28 +46,35 @@ class CategoryForm(forms.ModelForm):
             'slug': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'URL-адрес (автоматически)',
-                #'readonly': True,  # Можно сделать readonly, чтобы генерировался автоматически
             }),
         }
         labels = {
             'name': 'Название категории',
             'slug': 'Slug (URL)',
         }
+        help_texts = {
+            'slug': 'Автоматически генерируется из названия. Можно изменить вручную.',
+        }
 
 
 class OrderForm(forms.ModelForm):
     class Meta:
         model = Order
-        fields = ['telegram', 'flavors', 'comment']
+        fields = ['telegram', 'flavor', 'color', 'comment']
         widgets = {
             'telegram': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'ваш_никнейм',
                 'required': True,
             }),
-            'flavors': forms.TextInput(attrs={
+            'flavor': forms.TextInput(attrs={
                 'class': 'form-control',
-                'placeholder': 'Выберите вкусы из списка',
+                'placeholder': 'Выберите вкус из списка',
+                'readonly': True,
+            }),
+            'color': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Выберите цвет из списка',
                 'readonly': True,
             }),
             'comment': forms.Textarea(attrs={
@@ -71,7 +85,8 @@ class OrderForm(forms.ModelForm):
         }
         labels = {
             'telegram': 'Ваш Telegram-ник',
-            'flavors': 'Выбранные вкусы',
+            'flavor': 'Выбранный вкус',
+            'color': 'Выбранный цвет',
             'comment': 'Комментарий',
         }
 

@@ -72,9 +72,18 @@ def product_create(request):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
-            form.save()
+            product = form.save(commit=False)
+            # Сохраняем цвета и вкусы из POST
+            colors = request.POST.get('colors', '')
+            flavors = request.POST.get('flavors', '')
+            product.colors = colors
+            product.flavors = flavors
+            product.save()
+            form.save_m2m()
             messages.success(request, 'Товар успешно создан!')
             return redirect('dashboard:products')
+        else:
+            messages.error(request, 'Ошибка при создании товара. Проверьте поля.')
     else:
         form = ProductForm()
     return render(request, 'dashboard/product_form.html', {'form': form, 'title': 'Создать товар'})
@@ -88,9 +97,18 @@ def product_edit(request, product_id):
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES, instance=product)
         if form.is_valid():
-            form.save()
+            product = form.save(commit=False)
+            # Сохраняем цвета и вкусы из POST
+            colors = request.POST.get('colors', '')
+            flavors = request.POST.get('flavors', '')
+            product.colors = colors
+            product.flavors = flavors
+            product.save()
+            form.save_m2m()
             messages.success(request, 'Товар обновлен!')
             return redirect('dashboard:products')
+        else:
+            messages.error(request, 'Ошибка при обновлении товара. Проверьте поля.')
     else:
         form = ProductForm(instance=product)
     return render(request, 'dashboard/product_form.html', {'form': form, 'title': 'Редактировать товар'})
@@ -115,6 +133,7 @@ def orders_list(request):
     """Список заказов"""
     orders = Order.objects.all().order_by('-created_at')
     return render(request, 'dashboard/orders.html', {'orders': orders})
+
 
 # ========== КАТЕГОРИИ ==========
 @login_required(login_url='dashboard:login')

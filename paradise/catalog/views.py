@@ -41,8 +41,9 @@ def product_detail(request, slug):
     product = get_object_or_404(Product, slug=slug, in_stock=True)
     reviews = product.reviews.filter(is_approved=True).order_by('-created_at')
 
-    # Получаем список вкусов из модели
+    # Получаем списки вкусов и цветов
     flavors_list = product.get_flavors_list()
+    colors_list = product.get_colors_list()
 
     if request.method == 'POST':
         form = ReviewForm(request.POST)
@@ -59,71 +60,61 @@ def product_detail(request, slug):
     context = {
         'product': product,
         'flavors': flavors_list,
+        'colors': colors_list,  # ← Добавьте цвета
         'reviews': reviews,
         'review_form': form,
         'order_form': OrderForm(),
     }
     return render(request, 'catalog/product_detail.html', context)
-
 def order_create(request, product_id):
     """Обработка заказа"""
     product = get_object_or_404(Product, id=product_id)
 
     if request.method == 'POST':
-        form = OrderForm(request.POST)
+        telegram = request.POST.get('telegram', '').strip()
+        flavor = request.POST.get('flavor', '')
+        color = request.POST.get('color', '')
+        comment = request.POST.get('comment', '')
 
-        if form.is_valid():
-            telegram = form.cleaned_data['telegram']
-            flavors = form.cleaned_data['flavors']  # Уже строка через запятую
-            comment = form.cleaned_data['comment']
-
-            # Если flavors не пришли из формы, берем из POST
-            if not flavors:
-                flavors = request.POST.get('flavors', '')
-
-            order = Order.objects.create(
-                product=product,
-                telegram=telegram,
-                flavors=flavors,
-                comment=comment
-            )
-
-            send_telegram_notification(order, product, flavors)
-
-            messages.success(request, f'Спасибо! Ваш заказ на "{product.name}" принят!')
+        if not telegram:
+            messages.error(request, 'Пожалуйста, введите ваш Telegram-ник')
             return redirect('catalog:product_detail', slug=product.slug)
-        else:
-            for field, errors in form.errors.items():
-                for error in errors:
-                    messages.error(request, f'{error}')
-            return redirect('catalog:product_detail', slug=product.slug)
+
+        order = Order.objects.create(
+            product=product,
+            telegram=telegram,
+            flavor=flavor,
+            color=color,
+            comment=comment
+        )
+
+        send_telegram_notification(order, product, flavor, color)
+
+        messages.success(request, f'Спасибо! Ваш заказ на "{product.name}" принят!')
+        return redirect('catalog:product_detail', slug=product.slug)
 
     return redirect('catalog:product_detail', slug=product.slug)
 
 
-def send_telegram_notification(order, product, flavors):
+def send_telegram_notification(order, product, flavor, color):
     """Отправка уведомления в Telegram"""
-    import os
-    import requests
-
     bot_token = os.getenv('TG_BOT_TOKEN')
     chat_id = os.getenv('TG_CHAT_ID')
-
-    print(f'🔍 Проверка токена: {bot_token}')
-    print(f'🔍 Проверка Chat ID: {chat_id}')
 
     if not bot_token or not chat_id:
         print('❌ Ошибка: TG_BOT_TOKEN или TG_CHAT_ID не заданы в .env')
         return False
 
-    flavors_text = f"\n🍽️ *Вкусы:* {flavors}" if flavors else ""
+    flavor_text = f"\n🍽️ *Вкус:* {flavor}" if flavor else ""
+    color_text = f"\n🎨 *Цвет:* {color}" if color else ""
     telegram_link = f"https://t.me/{order.telegram}" if order.telegram else ""
 
     message = f"""
 🛍️ *НОВЫЙ ЗАКАЗ!*
 
 📦 *Товар:* {product.name}
-{flavors_text}
+{flavor_text}
+{color_text}
 📝 *Комментарий:* {order.comment or 'Нет'}
 
 👤 *Покупатель:* [{order.telegram}]({telegram_link})
@@ -139,14 +130,8 @@ def send_telegram_notification(order, product, flavors):
 
     try:
         response = requests.post(url, data=data)
-        print(f'📩 Ответ Telegram: {response.status_code} - {response.text}')
-
-        if response.status_code == 200:
-            print('✅ Сообщение успешно отправлено!')
-            return True
-        else:
-            print(f'❌ Ошибка: {response.text}')
-            return False
+        print(f'✅ Telegram ответ: {response.text}')
+        return True
     except Exception as e:
-        print(f'❌ Исключение: {e}')
+        print(f'❌ Ошибка отправки в Telegram: {e}')
         return False

@@ -19,7 +19,7 @@ class ProductAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
     list_per_page = 20
 
-    fields = ['name', 'slug', 'category', 'image', 'price', 'in_stock', 'flavors']
+    fields = ['name', 'slug', 'category', 'image', 'price', 'in_stock', 'flavors', 'colors']
 
     def image_preview(self, obj):
         if obj.image:
@@ -31,11 +31,11 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['telegram_link', 'product', 'flavors', 'created_at']
+    list_display = ['telegram_link', 'product', 'flavor', 'color', 'created_at']
     list_filter = ['created_at']
-    search_fields = ['telegram', 'product__name', 'flavors']
+    search_fields = ['telegram', 'product__name', 'flavor', 'color']
     readonly_fields = ['created_at']
-    fields = ['product', 'flavors', 'telegram', 'comment', 'created_at']
+    fields = ['product', 'flavor', 'color', 'telegram', 'comment', 'created_at']
 
     def telegram_link(self, obj):
         if obj.telegram:

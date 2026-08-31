@@ -1,17 +1,29 @@
 from django import forms
-from .models import Product, Category, Flavor, Review
+from catalog.models import Product, Category
 
-class ProductForm(forms.ModelForm):
+
+class DashboardProductForm(forms.ModelForm):
+    """Форма для управления товарами в админ-панели"""
+
     class Meta:
         model = Product
-        fields = ['category', 'name', 'price', 'image', 'in_stock', 'flavors']
+        fields = ['category', 'name', 'price', 'image', 'in_stock', 'flavors', 'colors']
         widgets = {
             'category': forms.Select(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название товара'}),
             'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
             'in_stock': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'flavors': forms.SelectMultiple(attrs={'class': 'form-control', 'style': 'height: 120px;'}),
+            'flavors': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 5,
+                'placeholder': 'Введите каждый вкус с новой строки\nНапример:\nКлубника\nШоколад\nВаниль'
+            }),
+            'colors': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 5,
+                'placeholder': 'Введите каждый цвет с новой строки\nНапример:\nЧерный\nБелый\nКрасный'
+            }),
         }
         labels = {
             'category': 'Категория',
@@ -19,39 +31,31 @@ class ProductForm(forms.ModelForm):
             'price': 'Цена',
             'image': 'Изображение',
             'in_stock': 'В наличии',
-            'flavors': 'Доступные вкусы',
+            'flavors': 'Вкусы (каждый с новой строки)',
+            'colors': 'Цвета (каждый с новой строки)',
         }
 
 
+class DashboardCategoryForm(forms.ModelForm):
+    """Форма для управления категориями в админ-панели"""
 
-class FlavorForm(forms.ModelForm):
     class Meta:
-        model = Flavor
-        fields = ['name', 'price_extra', 'is_active']
+        model = Category
+        fields = ['name', 'slug']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название вкуса'}),
-            'price_extra': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
-            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Название категории'
+            }),
+            'slug': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'URL-адрес (автоматически)',
+            }),
         }
         labels = {
-            'name': 'Название вкуса',
-            'price_extra': 'Доплата',
-            'is_active': 'Активен',
+            'name': 'Название категории',
+            'slug': 'Slug (URL)',
         }
-
-class ReviewForm(forms.ModelForm):
-    class Meta:
-        model = Review
-        fields = ['name', 'telegram', 'rating', 'text']
-        widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ваше имя'}),
-            'telegram': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ваш Telegram-ник (без @)'}),
-            'rating': forms.Select(attrs={'class': 'form-select'}),
-            'text': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Ваш отзыв о товаре...'}),
-        }
-        labels = {
-            'name': 'Ваше имя',
-            'telegram': 'Telegram (для связи)',
-            'rating': 'Оценка',
-            'text': 'Отзыв',
+        help_texts = {
+            'slug': 'Автоматически генерируется из названия. Можно изменить вручную.',
         }

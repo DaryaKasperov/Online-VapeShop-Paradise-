@@ -62,6 +62,7 @@ class Product(models.Model):
     price = models.DecimalField('Цена', max_digits=10, decimal_places=2)
     in_stock = models.BooleanField('В наличии', default=True)
     flavors = models.TextField('Вкусы', blank=True, default='', help_text='Введите каждый вкус с новой строки')
+    colors = models.TextField('Цвета', blank=True, default='', help_text='Введите каждый цвет с новой строки')
     created_at = models.DateTimeField('Добавлен', auto_now_add=True)
 
     class Meta:
@@ -71,20 +72,14 @@ class Product(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.slug or self.slug == '':
-            # Транслитерация для товаров
             self.slug = self.transliterate(self.name)
-
-            # Если slug пустой, используем ID
             if not self.slug:
                 import time
                 self.slug = f"product-{int(time.time())}"
-
-            # Проверяем уникальность
             counter = 1
             while Product.objects.filter(slug=self.slug).exclude(id=self.id).exists():
                 self.slug = f"{self.transliterate(self.name)}-{counter}"
                 counter += 1
-
         super().save(*args, **kwargs)
 
     def transliterate(self, text):
@@ -106,17 +101,12 @@ class Product(models.Model):
         for char in text:
             result += map.get(char, char)
 
+        import re
         result = result.lower()
         result = re.sub(r'[^a-z0-9\s-]', '', result)
         result = re.sub(r'[\s_-]+', '-', result)
         result = re.sub(r'^-+|-+$', '', result)
         return result
-
-    def __str__(self):
-        return self.name
-
-    def get_absolute_url(self):
-        return reverse('catalog:product_detail', args=[self.slug])
 
     def get_flavors_list(self):
         """Возвращает список вкусов из текстового поля"""
@@ -124,10 +114,21 @@ class Product(models.Model):
             return [f.strip() for f in self.flavors.split('\n') if f.strip()]
         return []
 
+    def get_colors_list(self):
+        """Возвращает список цветов из текстового поля"""
+        if self.colors:
+            return [c.strip() for c in self.colors.split('\n') if c.strip()]
+        return []
 
+    def __str__(self):
+        return self.name
+
+    def get_absolute_url(self):
+        return reverse('catalog:product_detail', args=[self.slug])
 class Order(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='Товар')
-    flavors = models.TextField('Выбранные вкусы', blank=True, help_text='Вкусы через запятую')
+    flavor = models.CharField('Выбранный вкус', max_length=100, blank=True)
+    color = models.CharField('Выбранный цвет', max_length=100, blank=True)
     telegram = models.CharField('Telegram', max_length=100)
     comment = models.TextField('Комментарий', blank=True)
     created_at = models.DateTimeField('Дата заказа', auto_now_add=True)
@@ -139,7 +140,6 @@ class Order(models.Model):
 
     def __str__(self):
         return f'Заказ от @{self.telegram} на {self.product.name}'
-
 
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE,
