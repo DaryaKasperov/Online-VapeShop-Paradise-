@@ -1,0 +1,106 @@
+{% extends 'catalog/base.html' %}
+{% load static %}
+
+{% block title %}Жидкости{% endblock %}
+
+{% block content %}
+<div class="row">
+    <!-- Фильтр -->
+    <div class="col-lg-3 col-md-4 mb-4">
+        <div class="filter-card card">
+            <div class="card-header" id="filterHeader">
+                <span><i class="fas fa-sliders-h" style="color: var(--glow-blue); margin-right: 10px;"></i>Фильтры</span>
+                <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+            </div>
+            <div class="card-body" id="filterBody">
+                <form method="get" id="filterForm">
+                    <!-- Поиск -->
+                    <div class="mb-3">
+                        <label for="id_search">
+                            <i class="fas "></i> Поиск
+                        </label>
+                        <input type="text" name="search" id="id_search" 
+                               class="form-control" 
+                               placeholder="Введите название товара..."
+                               value="{{ request.GET.search }}">
+                    </div>
+                    
+                    <!-- Категория -->
+                    <div class="mb-3">
+                        <label for="id_category">
+                            <i class="fas"></i> Категория
+                        </label>
+                        <select name="category" id="id_category" class="form-select">
+                            <option value="">Все категории</option>
+                            {% for cat in categories %}
+                                {% if cat.name != "Все категории" %}
+                                <option value="{{ cat.id }}" 
+                                        {% if request.GET.category|add:"0" == cat.id %}selected{% endif %}>
+                                    {{ cat.name }}
+                                </option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-check"></i> Применить
+                    </button>
+                    <a href="{% url 'catalog:product_list' %}" class="btn btn-secondary w-100 mt-2">
+                        <i class="fas fa-undo"></i> Сбросить
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Товары -->
+    <div class="col-lg-9 col-md-8">
+        <h1 class="page-title">
+            {% if category %}
+                {{ category.name }}
+            {% else %}
+                Все товары
+            {% endif %}
+        </h1>
+
+        
+        <div class="products-grid">
+            {% for product in products %}
+            <div class="product-card card">
+                {% if product.image %}
+                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}">
+                {% else %}
+                <div class="card-img-top d-flex align-items-center justify-content-center bg-light">
+                    <i class="fas fa-image fa-3x text-muted"></i>
+                </div>
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ product.name }}</h5>
+                    <div class="product-price">{{ product.price }} BYN</div>
+                    
+                    {% if product.flavors.all %}
+                    <div class="mt-2">
+                        {% for flavor in product.flavors.all|slice:":3" %}
+                        <span class="badge bg-light">{{ flavor.name }}</span>
+                        {% endfor %}
+                        {% if product.flavors.all|length > 3 %}
+                        <span class="badge bg-secondary">+{{ product.flavors.all|length|add:"-3" }}</span>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+                </div>
+                <div class="card-footer bg-transparent border-0 pt-0">
+                    <a href="{{ product.get_absolute_url }}" class="btn btn-primary">Подробнее</a>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <h4>Товаров не найдено</h4>
+                <p class="text-muted">Попробуйте изменить параметры фильтрации</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}

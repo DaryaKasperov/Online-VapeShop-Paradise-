@@ -1,0 +1,42 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Заказы - Админ-панель{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1>Заказы</h1>
+</div>
+
+<div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Товар</th>
+                <th>Telegram</th>
+                <th>Комментарий</th>
+                <th>Дата</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for order in orders %}
+            <tr>
+                <td>#{{ order.id }}</td>
+                <td>{{ order.product.name }}</td>
+                <td>
+                    <a href="https://t.me/{{ order.telegram }}" target="_blank" style="color: var(--glow-blue);">
+                        @{{ order.telegram }}
+                    </a>
+                </td>
+                <td>{{ order.comment|default:"Нет" }}</td>
+                <td>{{ order.created_at|date:"d.m.Y H:i" }}</td>
+            </tr>
+            {% empty %}
+            <tr>
+                <td colspan="5" class="text-center text-muted">Заказов пока нет</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %}

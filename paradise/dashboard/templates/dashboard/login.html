@@ -1,0 +1,208 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход в админ-панель Paradise</title>
+
+    <!-- Bootstrap -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-primary: #0a0a0a;
+            --bg-secondary: #111111;
+            --bg-card: #161616;
+            --text-primary: #ffffff;
+            --text-secondary: #aaaaaa;
+            --text-muted: #666666;
+            --border-color: #2a2a2a;
+            --glow-blue: #4fc3f7;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 50%, #0a0a0a 100%);
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .login-card {
+            background: rgba(22, 22, 34, 0.8);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            padding: 40px;
+            max-width: 420px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .login-card:hover {
+            border-color: rgba(79, 195, 247, 0.15);
+        }
+
+        .login-logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-logo h1 {
+            font-weight: 700;
+            font-size: 2rem;
+            letter-spacing: 0.1em;
+            color: var(--text-primary);
+        }
+
+        .login-logo h1 i {
+            color: var(--glow-blue);
+            margin-right: 10px;
+        }
+
+        .login-logo p {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .form-control {
+            background: rgba(10, 10, 10, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 0;
+            color: var(--text-primary);
+            padding: 12px 16px;
+            transition: all 0.3s ease;
+        }
+
+        .form-control:focus {
+            border-color: var(--glow-blue);
+            box-shadow: 0 0 20px rgba(79, 195, 247, 0.08);
+            background: rgba(10, 10, 10, 0.8);
+            color: var(--text-primary);
+        }
+
+        .form-control::placeholder {
+            color: var(--text-muted);
+        }
+
+        .form-label {
+            color: var(--text-secondary);
+            font-weight: 500;
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .btn-login {
+            background: linear-gradient(135deg, #4fc3f7, #0288d1);
+            border: none;
+            border-radius: 0;
+            padding: 14px;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            transition: all 0.3s ease;
+            color: #ffffff;
+            width: 100%;
+        }
+
+        .btn-login:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(79, 195, 247, 0.2);
+        }
+
+        .alert {
+            border: none;
+            border-radius: 0;
+            padding: 1rem 1.25rem;
+            background: rgba(22, 22, 34, 0.6);
+        }
+
+        .alert-success {
+            color: var(--glow-blue);
+            border-left: 3px solid var(--glow-blue);
+        }
+
+        .alert-error {
+            color: #ff4444;
+            border-left: 3px solid #ff4444;
+        }
+
+        .back-link {
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.85rem;
+            transition: color 0.3s ease;
+        }
+
+        .back-link:hover {
+            color: var(--text-primary);
+        }
+
+        @media (max-width: 480px) {
+            .login-card {
+                padding: 25px 20px;
+                margin: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-logo">
+            <h1><i class="fas fa-crown"></i>Paradise</h1>
+            <p>Вход в админ-панель</p>
+        </div>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        <form method="post">
+            {% csrf_token %}
+
+            <div class="mb-3">
+                <label for="username" class="form-label">
+                    <i class="fas fa-user" style="color: var(--glow-blue);"></i> Логин
+                </label>
+                <input type="text" class="form-control" id="username" name="username"
+                       placeholder="Введите логин" required autofocus>
+            </div>
+
+            <div class="mb-3">
+                <label for="password" class="form-label">
+                    <i class="fas fa-lock" style="color: var(--glow-blue);"></i> Пароль
+                </label>
+                <input type="password" class="form-control" id="password" name="password"
+                       placeholder="Введите пароль" required>
+            </div>
+
+            <button type="submit" class="btn-login">
+                <i class="fas fa-sign-in-alt"></i> Войти
+            </button>
+        </form>
+
+        <div class="text-center mt-3">
+            <a href="{% url 'catalog:product_list' %}" class="back-link">
+                <i class="fas fa-arrow-left"></i> Вернуться на сайт
+            </a>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
