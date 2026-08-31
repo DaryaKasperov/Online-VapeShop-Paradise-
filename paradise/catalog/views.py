@@ -7,11 +7,8 @@ import requests
 import os
 
 
-# import re  # ← УДАЛИТЕ re (больше не нужен)
-
-
 def product_list(request, category_slug=None):
-    """Главная страница и список товаров с фильтрацией"""
+    """Главная страница и список товаров"""
     categories = Category.objects.all()
     products = Product.objects.filter(in_stock=True)
 
@@ -22,7 +19,10 @@ def product_list(request, category_slug=None):
 
     category_id = request.GET.get('category')
     if category_id and not category:
-        category = get_object_or_404(Category, id=category_id)
+        try:
+            category = get_object_or_404(Category, id=category_id)
+        except:
+            pass
 
     filter = ProductFilter(request.GET, queryset=products)
     products = filter.qs
@@ -33,9 +33,7 @@ def product_list(request, category_slug=None):
         'filter': filter,
         'products': products,
     }
-    return render(request, 'catalog/product_list.html', context)
-
-
+    return render(request, 'catalog/index.html', context)
 def product_detail(request, slug):
     """Страница одного товара с отзывами"""
     product = get_object_or_404(Product, slug=slug, in_stock=True)
