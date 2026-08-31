@@ -19,19 +19,7 @@ class ProductAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
     list_per_page = 20
 
-    # Настройка отображения полей в админке
-    fieldsets = (
-        (None, {
-            'fields': ('name', 'slug', 'category', 'image', 'price', 'in_stock')
-        }),
-        ('Вкусы (заполните доступные)', {
-            'fields': (
-                'flavor_1', 'flavor_2', 'flavor_3', 'flavor_4', 'flavor_5',
-                'flavor_6', 'flavor_7', 'flavor_8', 'flavor_9', 'flavor_10'
-            ),
-            'classes': ('collapse',),
-        }),
-    )
+    fields = ['name', 'slug', 'category', 'image', 'price', 'in_stock', 'flavors']
 
     def image_preview(self, obj):
         if obj.image:

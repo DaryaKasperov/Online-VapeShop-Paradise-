@@ -27,16 +27,24 @@ class ProductForm(forms.ModelForm):
             'flavors': 'Вкусы (каждый с новой строки)',
         }
 
-
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
-        fields = ['name']
+        fields = ['name', 'slug']  # ← Добавьте 'slug'
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название категории'}),
+            'name': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Название категории'
+            }),
+            'slug': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'URL-адрес (автоматически)',
+                #'readonly': True,  # Можно сделать readonly, чтобы генерировался автоматически
+            }),
         }
         labels = {
             'name': 'Название категории',
+            'slug': 'Slug (URL)',
         }
 
 

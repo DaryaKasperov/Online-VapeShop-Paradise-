@@ -20,6 +20,10 @@ def product_list(request, category_slug=None):
         category = get_object_or_404(Category, slug=category_slug)
         products = products.filter(category=category)
 
+    category_id = request.GET.get('category')
+    if category_id and not category:
+        category = get_object_or_404(Category, id=category_id)
+
     filter = ProductFilter(request.GET, queryset=products)
     products = filter.qs
 
@@ -99,8 +103,14 @@ def order_create(request, product_id):
 
 def send_telegram_notification(order, product, flavors):
     """Отправка уведомления в Telegram"""
+    import os
+    import requests
+
     bot_token = os.getenv('TG_BOT_TOKEN')
     chat_id = os.getenv('TG_CHAT_ID')
+
+    print(f'🔍 Проверка токена: {bot_token}')
+    print(f'🔍 Проверка Chat ID: {chat_id}')
 
     if not bot_token or not chat_id:
         print('❌ Ошибка: TG_BOT_TOKEN или TG_CHAT_ID не заданы в .env')
@@ -129,8 +139,14 @@ def send_telegram_notification(order, product, flavors):
 
     try:
         response = requests.post(url, data=data)
-        print(f'✅ Telegram ответ: {response.text}')
-        return True
+        print(f'📩 Ответ Telegram: {response.status_code} - {response.text}')
+
+        if response.status_code == 200:
+            print('✅ Сообщение успешно отправлено!')
+            return True
+        else:
+            print(f'❌ Ошибка: {response.text}')
+            return False
     except Exception as e:
-        print(f'❌ Ошибка отправки в Telegram: {e}')
+        print(f'❌ Исключение: {e}')
         return False

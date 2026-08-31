@@ -65,12 +65,20 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="stat-card">
-                    <form method="post">
+                    <form method="post" id="categoryForm">
                         {% csrf_token %}
 
                         <div class="mb-3">
                             <label class="form-label">Название категории</label>
                             {{ form.name }}
+                            <small class="text-muted">Введите название категории</small>
+                        </div>
+
+                        <!-- Поле Slug -->
+                        <div class="mb-3">
+                            <label class="form-label">Slug (URL)</label>
+                            {{ form.slug }}
+                            <small class="text-muted">Автоматически генерируется из названия. Можно изменить вручную.</small>
                         </div>
 
                         <button type="submit" class="btn btn-primary">
@@ -80,6 +88,34 @@
                 </div>
             </div>
         </div>
+
+        <!-- JavaScript для автоматической генерации slug -->
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const nameInput = document.getElementById('id_name');
+            const slugInput = document.getElementById('id_slug');
+
+            if (nameInput && slugInput) {
+                function generateSlug(text) {
+                    return text
+                        .toLowerCase()
+                        .replace(/[^\w\s-]/g, '')
+                        .replace(/[\s_-]+/g, '-')
+                        .replace(/^-+|-+$/g, '');
+                }
+
+                nameInput.addEventListener('input', function() {
+                    const slug = generateSlug(this.value);
+                    slugInput.value = slug;
+                });
+
+                if (!slugInput.value) {
+                    const slug = generateSlug(nameInput.value);
+                    slugInput.value = slug;
+                }
+            }
+        });
+        </script>
     {% endif %}
 
     {# ========== ПОДТВЕРЖДЕНИЕ УДАЛЕНИЯ ========== #}

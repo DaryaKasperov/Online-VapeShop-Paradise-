@@ -22,16 +22,7 @@ class ProductForm(forms.ModelForm):
             'flavors': 'Доступные вкусы',
         }
 
-class CategoryForm(forms.ModelForm):
-    class Meta:
-        model = Category
-        fields = ['name']
-        widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название категории'}),
-        }
-        labels = {
-            'name': 'Название категории',
-        }
+
 
 class FlavorForm(forms.ModelForm):
     class Meta:
