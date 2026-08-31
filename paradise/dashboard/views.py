@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from catalog.models import Product, Category, Flavor, Order
-from catalog.forms import ProductForm, CategoryForm, FlavorForm
+from catalog.models import Product, Category, Order
+from catalog.forms import ProductForm, CategoryForm
 
 
 # Проверка, что пользователь админ
@@ -14,7 +14,6 @@ def is_admin(user):
 # ========== СТРАНИЦА ВХОДА ==========
 def admin_login(request):
     """Страница входа в админ-панель"""
-    # Если пользователь уже авторизован - перенаправляем в админку
     if request.user.is_authenticated and is_admin(request.user):
         return redirect('dashboard:index')
 
@@ -52,7 +51,6 @@ def dashboard_index(request):
     context = {
         'products_count': Product.objects.count(),
         'categories_count': Category.objects.count(),
-        'flavors_count': Flavor.objects.count(),
         'orders_count': Order.objects.count(),
     }
     return render(request, 'dashboard/index.html', context)
@@ -110,6 +108,7 @@ def product_delete(request, product_id):
     return render(request, 'dashboard/product_confirm_delete.html', {'product': product})
 
 
+# ========== ЗАКАЗЫ ==========
 @login_required(login_url='dashboard:login')
 @user_passes_test(is_admin, login_url='dashboard:login')
 def orders_list(request):
@@ -117,52 +116,67 @@ def orders_list(request):
     orders = Order.objects.all().order_by('-created_at')
     return render(request, 'dashboard/orders.html', {'orders': orders})
 
-# Добавьте эти функции в dashboard/views.py
+# ========== КАТЕГОРИИ ==========
+@login_required(login_url='dashboard:login')
+@user_passes_test(is_admin, login_url='dashboard:login')
+def category_list_admin(request):
+    """Список категорий в админке"""
+    categories = Category.objects.all().order_by('name')
+    return render(request, 'dashboard/category_manage.html', {
+        'categories': categories,
+        'action': 'list'
+    })
+
 
 @login_required(login_url='dashboard:login')
 @user_passes_test(is_admin, login_url='dashboard:login')
-def flavor_list_admin(request):
-    """Список вкусов в админке"""
-    flavors = Flavor.objects.all().order_by('name')
-    return render(request, 'dashboard/flavors.html', {'flavors': flavors})
-
-@login_required(login_url='dashboard:login')
-@user_passes_test(is_admin, login_url='dashboard:login')
-def flavor_create(request):
-    """Создание вкуса"""
+def category_create(request):
+    """Создание категории"""
     if request.method == 'POST':
-        form = FlavorForm(request.POST)
+        form = CategoryForm(request.POST)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Вкус успешно создан!')
-            return redirect('dashboard:flavors')
+            messages.success(request, 'Категория успешно создана!')
+            return redirect('dashboard:categories')
     else:
-        form = FlavorForm()
-    return render(request, 'dashboard/flavor_form.html', {'form': form, 'title': 'Создать вкус'})
+        form = CategoryForm()
+    return render(request, 'dashboard/category_manage.html', {
+        'form': form,
+        'title': 'Создать категорию',
+        'action': 'form'
+    })
+
 
 @login_required(login_url='dashboard:login')
 @user_passes_test(is_admin, login_url='dashboard:login')
-def flavor_edit(request, flavor_id):
-    """Редактирование вкуса"""
-    flavor = get_object_or_404(Flavor, id=flavor_id)
+def category_edit(request, category_id):
+    """Редактирование категории"""
+    category = get_object_or_404(Category, id=category_id)
     if request.method == 'POST':
-        form = FlavorForm(request.POST, instance=flavor)
+        form = CategoryForm(request.POST, instance=category)
         if form.is_valid():
             form.save()
-            messages.success(request, 'Вкус обновлен!')
-            return redirect('dashboard:flavors')
+            messages.success(request, 'Категория обновлена!')
+            return redirect('dashboard:categories')
     else:
-        form = FlavorForm(instance=flavor)
-    return render(request, 'dashboard/flavor_form.html', {'form': form, 'title': 'Редактировать вкус'})
+        form = CategoryForm(instance=category)
+    return render(request, 'dashboard/category_manage.html', {
+        'form': form,
+        'title': 'Редактировать категорию',
+        'action': 'form'
+    })
+
 
 @login_required(login_url='dashboard:login')
 @user_passes_test(is_admin, login_url='dashboard:login')
-def flavor_delete(request, flavor_id):
-    """Удаление вкуса"""
-    flavor = get_object_or_404(Flavor, id=flavor_id)
+def category_delete(request, category_id):
+    """Удаление категории"""
+    category = get_object_or_404(Category, id=category_id)
     if request.method == 'POST':
-        flavor.delete()
-        messages.success(request, 'Вкус удален!')
-        return redirect('dashboard:flavors')
-    return render(request, 'dashboard/flavor_confirm_delete.html', {'flavor': flavor})
-
+        category.delete()
+        messages.success(request, 'Категория удалена!')
+        return redirect('dashboard:categories')
+    return render(request, 'dashboard/category_manage.html', {
+        'category': category,
+        'action': 'delete'
+    })

@@ -1,130 +1,230 @@
-from django import forms
-from .models import Product, Category, Flavor, Review, Order
-import re
+{% extends 'catalog/base.html' %}
+{% load static %}
 
+{% block title %}{{ product.name }}{% endblock %}
 
-class ProductForm(forms.ModelForm):
-    class Meta:
-        model = Product
-        fields = ['category', 'name', 'price', 'image', 'in_stock', 'flavors']
-        widgets = {
-            'category': forms.Select(attrs={'class': 'form-control'}),
-            'name': forms.TextInput(attrs={'class':'form-control', 'placeholder': 'Название товара'}),
-            'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
-            'image': forms.FileInput(attrs={'class': 'form-control'}),
-            'in_stock': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'flavors': forms.SelectMultiple(attrs={'class': 'form-control', 'style': 'height: 120px;'}),
-        }
-        labels = {
-            'category': 'Категория',
-            'name': 'Название',
-            'price': 'Цена',
-            'image': 'Изображение',
-            'in_stock': 'В наличии',
-            'flavors': 'Доступные вкусы',
-        }
+{% block content %}
+<div class="row">
+    <div class="col-lg-6 mb-4">
+        {% if product.image %}
+        <img src="{{ product.image.url }}" class="product-detail-image" alt="{{ product.name }}">
+        {% else %}
+        <div class="product-detail-image d-flex align-items-center justify-content-center bg-light">
+            <i class="fas fa-image fa-5x text-muted"></i>
+        </div>
+        {% endif %}
+    </div>
+    <div class="col-lg-6">
+        <h1 class="product-detail-title">{{ product.name }}</h1>
+        <p class="text-muted">{{ product.category.name }}</p>
+        <div class="product-detail-price mb-4">{{ product.price }} BYN</div>
 
+        {% if product.in_stock %}
+        <div class="alert alert-success">В наличии</div>
 
-class CategoryForm(forms.ModelForm):
-    class Meta:
-        model = Category
-        fields = ['name']
-        widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название категории'}),
-        }
-        labels = {
-            'name': 'Название категории',
-        }
+        <!-- ========== ФОРМА ЗАКАЗА ========== -->
+        <div class="order-form">
+            <h4>Оформить заказ</h4>
+            <form method="post" action="{% url 'catalog:order_create' product.id %}">
+                {% csrf_token %}
 
+             <!-- Выбор вкуса (чекбоксы - можно выбрать несколько) -->
+{% if flavors %}
+<div class="mb-3">
+    <label class="form-label">Выберите вкусы (можно несколько)</label>
+    <div class="flavors-grid">
+        {% for flavor in flavors %}
+        <div class="flavor-option" data-flavor="{{ flavor }}">
+            <input type="checkbox" class="flavor-checkbox" id="flavor_{{ forloop.counter }}" value="{{ flavor }}">
+            <label for="flavor_{{ forloop.counter }}" class="flavor-label">
+                <span class="flavor-icon">🍭</span>
+                <span class="flavor-name">{{ flavor }}</span>
+                <span class="flavor-check"><i class="fas fa-check"></i></span>
+            </label>
+        </div>
+        {% endfor %}
+    </div>
+    <input type="hidden" name="flavors" id="selected_flavors" value="">
+    <small class="text-muted">Выберите один или несколько вкусов</small>
+</div>
+{% endif %}
 
-class FlavorForm(forms.ModelForm):
-    class Meta:
-        model = Flavor
-        fields = ['name', 'price_extra', 'is_active']
-        widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название вкуса'}),
-            'price_extra': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
-            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        }
-        labels = {
-            'name': 'Название вкуса',
-            'price_extra': 'Доплата',
-            'is_active': 'Активен',
-        }
+                <!-- Поле Telegram через форму Django -->
+                <div class="mb-3 telegram-input-wrapper">
+                    <label for="id_telegram" class="form-label">
+                        <i class="fab fa-telegram-plane" style="color: var(--glow-blue);"></i>
+                        {{ order_form.telegram.label }}
+                    </label>
+                    <div class="input-group">
+                        <span class="input-group-text">@</span>
+                        {{ order_form.telegram }}
+                    </div>
+                    <!-- Ошибки валидации под полем -->
+                    {% if order_form.telegram.errors %}
+                        <div class="field-error">
+                            {% for error in order_form.telegram.errors %}
+                                {{ error|safe|linebreaksbr }}
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                    <small class="text-muted">{{ order_form.telegram.help_text }}</small>
+                </div>
 
+                <!-- Поле комментария -->
+                <div class="mb-3">
+                    <label for="id_comment" class="form-label">
+                        <i class="fas fa-comment" style="color: var(--glow-blue);"></i>
+                        {{ order_form.comment.label }}
+                    </label>
+                    {{ order_form.comment }}
+                </div>
 
-class ReviewForm(forms.ModelForm):
-    class Meta:
-        model = Review
-        fields = ['name', 'telegram', 'rating', 'text']
-        widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ваше имя'}),
-            'telegram': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ваш Telegram-ник (без @)'}),
-            'rating': forms.Select(attrs={'class': 'form-select'}),
-            'text': forms.Textarea(attrs={'class': 'form-control', 'rows': 4, 'placeholder': 'Ваш отзыв о товаре...'}),
-        }
-        labels = {
-            'name': 'Ваше имя',
-            'telegram': 'Telegram (для связи)',
-            'rating': 'Оценка',
-            'text': 'Отзыв',
-        }
+                <button type="submit" class="btn btn-success w-100">
+                    <i class="fas fa-check-circle"></i> Заказать
+                </button>
+            </form>
+        </div>
+        {% else %}
+        <div class="alert alert-danger">Нет в наличии</div>
+        {% endif %}
+    </div>
+</div>
 
+<!-- ========== ОТЗЫВЫ ========== -->
+<div class="row mt-5">
+    <div class="col-12">
+        <h2><i class="fas fa-star" style="color: var(--glow-blue);"></i> Отзывы ({{ reviews.count }})</h2>
 
-# ========== ФОРМА ДЛЯ ЗАКАЗА С ВАЛИДАЦИЕЙ TELEGRAM ==========
-class OrderForm(forms.ModelForm):
-    class Meta:
-        model = Order
-        fields = ['telegram', 'comment']
-        widgets = {
-            'telegram': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'ваш_никнейм',
-                'required': True,
-                'minlength': 5,
-                'maxlength': 32,
-            }),
-            'comment': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Пожелания к заказу...'
-            }),
-        }
-        labels = {
-            'telegram': 'Ваш Telegram-ник',
-            'comment': 'Комментарий',
-        }
-        help_texts = {
-            'telegram': 'Введите ваш Telegram-ник без @',
-        }
+        {% if reviews %}
+        <div class="reviews-list mb-4">
+            {% for review in reviews %}
+            <div class="review-item">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <strong>{{ review.name }}</strong>
+                        {% if review.telegram %}
+                        <a href="https://t.me/{{ review.telegram }}" target="_blank" style="color: var(--glow-blue); margin-left: 0.5rem;">
+                            <i class="fab fa-telegram-plane"></i> @{{ review.telegram }}
+                        </a>
+                        {% endif %}
+                    </div>
+                    <div>
+                        {% for i in "12345"|make_list %}
+                            {% if forloop.counter <= review.rating %}
+                            <span style="color: #f1c40f;">★</span>
+                            {% else %}
+                            <span style="color: #444;">★</span>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                </div>
+                <p class="mt-2" style="color: var(--text-secondary);">{{ review.text }}</p>
+                <small class="text-muted">{{ review.created_at|date:"d.m.Y" }}</small>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted">Пока нет отзывов. Будьте первым!</p>
+        {% endif %}
 
-    def clean_telegram(self):
-        """Валидация Telegram-ника"""
-        telegram = self.cleaned_data.get('telegram', '').strip()
-        
-        # Убираем @ если есть
-        username = telegram.replace('@', '').strip()
-        
-        # Проверка на пустое значение
-        if not username:
-            raise forms.ValidationError('Пожалуйста, введите ваш Telegram-ник')
-        
-        # Проверка по правилам Telegram:
-        # - 5-32 символа
-        # - только латиница, цифры и подчеркивание
-        # - не начинается с цифры
-        # - не заканчивается на подчеркивание
-        # - не содержит два подчеркивания подряд
-        pattern = r'^(?!.*__)[a-zA-Z][a-zA-Z0-9_]{4,31}(?<!_)$'
-        
-        if not re.match(pattern, username):
-            raise forms.ValidationError(
-                '❌ Некорректный Telegram-ник.\n'
-                '• 5-32 символа\n'
-                '• Только латиница (a-z), цифры (0-9) и _\n'
-                '• Не начинается с цифры\n'
-                '• Не заканчивается на _\n'
-                '• Не содержит __ подряд'
-            )
-        
-        return username  # Возвращаем очищенный ник
+        <!-- ========== ФОРМА ОТЗЫВА ========== -->
+        <div class="review-form-container">
+            <h4><i class="fas fa-pen"></i> Оставить отзыв</h4>
+            <form method="post" action="">
+                {% csrf_token %}
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-user" style="color: var(--glow-blue);"></i> {{ review_form.name.label }}</label>
+                            {{ review_form.name }}
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fab fa-telegram-plane" style="color: var(--glow-blue);"></i> {{ review_form.telegram.label }}</label>
+                            <div class="input-group">
+                                <span class="input-group-text">@</span>
+                                {{ review_form.telegram }}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label class="form-label"><i class="fas fa-star" style="color: var(--glow-blue);"></i> {{ review_form.rating.label }}</label>
+                            {{ review_form.rating }}
+                        </div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label"><i class="fas fa-comment" style="color: var(--glow-blue);"></i> {{ review_form.text.label }}</label>
+                    {{ review_form.text }}
+                </div>
+                <button type="submit" class="btn btn-primary">
+                    <i class="fas fa-paper-plane"></i> Отправить отзыв
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    /* Стили для ошибки под полем */
+    .field-error {
+        color: #ff4444;
+        font-size: 0.9rem;
+        padding: 8px 12px;
+        margin-top: 6px;
+        background: rgba(255, 68, 68, 0.08);
+        border-left: 3px solid #ff4444;
+        animation: errorSlideDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
+        display: block;
+    }
+
+    @keyframes errorSlideDown {
+        0% {
+            opacity: 0;
+            transform: translateY(-10px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .form-control.error {
+        border-color: #ff4444 !important;
+        box-shadow: 0 0 20px rgba(255, 68, 68, 0.1) !important;
+        border-width: 2px !important;
+    }
+</style>
+
+{% block extra_js %}
+<script>
+    // Автоматическое скрытие ошибки при вводе
+    document.addEventListener('DOMContentLoaded', function() {
+        var telegramInput = document.getElementById('id_telegram');
+        var errorContainer = document.querySelector('.field-error');
+
+        if (telegramInput && errorContainer) {
+            telegramInput.addEventListener('input', function() {
+                errorContainer.style.display = 'none';
+                this.classList.remove('error');
+            });
+
+            telegramInput.addEventListener('blur', function() {
+                var value = this.value.replace(/^@/, '');
+                var pattern = /^(?!.*__)[a-zA-Z][a-zA-Z0-9_]{4,31}(?<!_)$/;
+
+                if (value.length > 0 && !pattern.test(value)) {
+                    this.classList.add('error');
+                } else {
+                    this.classList.remove('error');
+                }
+            });
+        }
+    });
+</script>
+{% endblock %}
+{% endblock %}

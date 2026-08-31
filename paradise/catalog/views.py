@@ -1,6 +1,6 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib import messages
-from .models import Category, Product, Order, Flavor, Review
+from .models import Category, Product, Order, Review
 from .filters import ProductFilter
 from .forms import ReviewForm, OrderForm  # ← Добавьте OrderForm
 import requests
@@ -13,7 +13,7 @@ import os
 def product_list(request, category_slug=None):
     """Главная страница и список товаров с фильтрацией"""
     categories = Category.objects.all()
-    products = Product.objects.filter(in_stock=True).prefetch_related('flavors', 'reviews')
+    products = Product.objects.filter(in_stock=True)
 
     category = None
     if category_slug:
@@ -35,8 +35,10 @@ def product_list(request, category_slug=None):
 def product_detail(request, slug):
     """Страница одного товара с отзывами"""
     product = get_object_or_404(Product, slug=slug, in_stock=True)
-    flavors = product.flavors.filter(is_active=True)
     reviews = product.reviews.filter(is_approved=True).order_by('-created_at')
+
+    # Получаем список вкусов из модели
+    flavors_list = product.get_flavors_list()
 
     if request.method == 'POST':
         form = ReviewForm(request.POST)
@@ -52,47 +54,41 @@ def product_detail(request, slug):
 
     context = {
         'product': product,
-        'flavors': flavors,
+        'flavors': flavors_list,
         'reviews': reviews,
         'review_form': form,
+        'order_form': OrderForm(),
     }
     return render(request, 'catalog/product_detail.html', context)
 
-
 def order_create(request, product_id):
-    """Обработка заказа через ModelForm"""
+    """Обработка заказа"""
     product = get_object_or_404(Product, id=product_id)
 
     if request.method == 'POST':
-        # Создаем форму с данными из POST
         form = OrderForm(request.POST)
 
-        # Валидация происходит в форме (clean_telegram)
         if form.is_valid():
-            # Получаем данные из формы
             telegram = form.cleaned_data['telegram']
+            flavors = form.cleaned_data['flavors']  # Уже строка через запятую
             comment = form.cleaned_data['comment']
-            flavor_id = request.POST.get('flavor')
 
-            # Получаем выбранный вкус
-            flavor = None
-            if flavor_id:
-                flavor = get_object_or_404(Flavor, id=flavor_id)
+            # Если flavors не пришли из формы, берем из POST
+            if not flavors:
+                flavors = request.POST.get('flavors', '')
 
-            # Создаем заказ
             order = Order.objects.create(
                 product=product,
-                flavor=flavor,
-                telegram=telegram,  # Уже очищенный и валидный
+                telegram=telegram,
+                flavors=flavors,
                 comment=comment
             )
 
-            send_telegram_notification(order, product, flavor)
+            send_telegram_notification(order, product, flavors)
 
             messages.success(request, f'Спасибо! Ваш заказ на "{product.name}" принят!')
             return redirect('catalog:product_detail', slug=product.slug)
         else:
-            # Если форма не валидна — показываем ошибки
             for field, errors in form.errors.items():
                 for error in errors:
                     messages.error(request, f'{error}')
@@ -101,7 +97,7 @@ def order_create(request, product_id):
     return redirect('catalog:product_detail', slug=product.slug)
 
 
-def send_telegram_notification(order, product, flavor):
+def send_telegram_notification(order, product, flavors):
     """Отправка уведомления в Telegram"""
     bot_token = os.getenv('TG_BOT_TOKEN')
     chat_id = os.getenv('TG_CHAT_ID')
@@ -110,14 +106,14 @@ def send_telegram_notification(order, product, flavor):
         print('❌ Ошибка: TG_BOT_TOKEN или TG_CHAT_ID не заданы в .env')
         return False
 
-    flavor_text = f"\n🍽️ *Вкус:* {flavor.name}" if flavor else ""
+    flavors_text = f"\n🍽️ *Вкусы:* {flavors}" if flavors else ""
     telegram_link = f"https://t.me/{order.telegram}" if order.telegram else ""
 
     message = f"""
 🛍️ *НОВЫЙ ЗАКАЗ!*
 
 📦 *Товар:* {product.name}
-{flavor_text}
+{flavors_text}
 📝 *Комментарий:* {order.comment or 'Нет'}
 
 👤 *Покупатель:* [{order.telegram}]({telegram_link})

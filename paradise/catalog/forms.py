@@ -1,6 +1,5 @@
 from django import forms
-from .models import Product, Category, Flavor, Review, Order
-import re
+from .models import Product, Category, Order, Review
 
 
 class ProductForm(forms.ModelForm):
@@ -9,12 +8,15 @@ class ProductForm(forms.ModelForm):
         fields = ['category', 'name', 'price', 'image', 'in_stock', 'flavors']
         widgets = {
             'category': forms.Select(attrs={'class': 'form-control'}),
-            'name': forms.TextInput(attrs={'class': 'form - control', 'placeholder': 'Название товара'}),
-                                                                                                    'price': forms.NumberInput(
-            attrs={'class': 'form-control', 'placeholder': '0.00'}),
-        'image': forms.FileInput(attrs={'class': 'form-control'}),
-        'in_stock': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-        'flavors': forms.SelectMultiple(attrs={'class': 'form-control', 'style': 'height: 120px;'}),
+            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название товара'}),
+            'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
+            'image': forms.FileInput(attrs={'class': 'form-control'}),
+            'in_stock': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'flavors': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 5,
+                'placeholder': 'Введите каждый вкус с новой строки\nНапример:\nКлубника\nШоколад\nВаниль'
+            }),
         }
         labels = {
             'category': 'Категория',
@@ -22,7 +24,7 @@ class ProductForm(forms.ModelForm):
             'price': 'Цена',
             'image': 'Изображение',
             'in_stock': 'В наличии',
-            'flavors': 'Доступные вкусы',
+            'flavors': 'Вкусы (каждый с новой строки)',
         }
 
 
@@ -38,19 +40,31 @@ class CategoryForm(forms.ModelForm):
         }
 
 
-class FlavorForm(forms.ModelForm):
+class OrderForm(forms.ModelForm):
     class Meta:
-        model = Flavor
-        fields = ['name', 'price_extra', 'is_active']
+        model = Order
+        fields = ['telegram', 'flavors', 'comment']
         widgets = {
-            'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название вкуса'}),
-            'price_extra': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
-            'is_active': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
+            'telegram': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'ваш_никнейм',
+                'required': True,
+            }),
+            'flavors': forms.TextInput(attrs={
+                'class': 'form-control',
+                'placeholder': 'Выберите вкусы из списка',
+                'readonly': True,
+            }),
+            'comment': forms.Textarea(attrs={
+                'class': 'form-control',
+                'rows': 3,
+                'placeholder': 'Пожелания к заказу...'
+            }),
         }
         labels = {
-            'name': 'Название вкуса',
-            'price_extra': 'Доплата',
-            'is_active': 'Активен',
+            'telegram': 'Ваш Telegram-ник',
+            'flavors': 'Выбранные вкусы',
+            'comment': 'Комментарий',
         }
 
 
@@ -70,62 +84,3 @@ class ReviewForm(forms.ModelForm):
             'rating': 'Оценка',
             'text': 'Отзыв',
         }
-
-
-# ========== ФОРМА ДЛЯ ЗАКАЗА С ВАЛИДАЦИЕЙ TELEGRAM ==========
-class OrderForm(forms.ModelForm):
-    class Meta:
-        model = Order
-        fields = ['telegram', 'comment']
-        widgets = {
-            'telegram': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'ваш_никнейм',
-                'required': True,
-                'minlength': 5,
-                'maxlength': 32,
-            }),
-            'comment': forms.Textarea(attrs={
-                'class': 'form-control',
-                'rows': 3,
-                'placeholder': 'Пожелания к заказу...'
-            }),
-        }
-        labels = {
-            'telegram': 'Ваш Telegram-ник',
-            'comment': 'Комментарий',
-        }
-        help_texts = {
-            'telegram': 'Введите ваш Telegram-ник без @',
-        }
-
-    def clean_telegram(self):
-        """Валидация Telegram-ника"""
-        telegram = self.cleaned_data.get('telegram', '').strip()
-
-        # Убираем @ если есть
-        username = telegram.replace('@', '').strip()
-
-        # Проверка на пустое значение
-        if not username:
-            raise forms.ValidationError('Пожалуйста, введите ваш Telegram-ник')
-
-        # Проверка по правилам Telegram:
-        # - 5-32 символа
-        # - только латиница, цифры и подчеркивание
-        # - не начинается с цифры
-        # - не заканчивается на подчеркивание
-        # - не содержит два подчеркивания подряд
-        pattern = r'^(?!.*__)[a-zA-Z][a-zA-Z0-9_]{4,31}(?<!_)$'
-
-        if not re.match(pattern, username):
-            raise forms.ValidationError(
-                '❌ Некорректный Telegram-ник.\n'
-                '• 5-32 символа\n'
-                '• Только латиница (a-z), цифры (0-9) и _\n'
-                '• Не начинается с цифры\n'
-                '• Не заканчивается на _\n'
-                '• Не содержит __ подряд'
-            )
-
-        return username  # Возвращаем очищенный ник

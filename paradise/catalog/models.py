@@ -2,6 +2,7 @@ from django.db import models
 from django.urls import reverse
 from django.utils.text import slugify
 
+
 class Category(models.Model):
     name = models.CharField('Название', max_length=100)
     slug = models.SlugField(unique=True, blank=True)
@@ -22,19 +23,6 @@ class Category(models.Model):
         return reverse('catalog:category', args=[self.slug])
 
 
-class Flavor(models.Model):
-    name = models.CharField('Название вкуса', max_length=100)
-    price_extra = models.DecimalField('Доплата', max_digits=10, decimal_places=2, default=0)
-    is_active = models.BooleanField('Активен', default=True)
-
-    class Meta:
-        verbose_name = 'Вкус'
-        verbose_name_plural = 'Вкусы'
-
-    def __str__(self):
-        return self.name
-
-
 class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE,
                                  related_name='products', verbose_name='Категория')
@@ -43,7 +31,7 @@ class Product(models.Model):
     image = models.ImageField('Изображение', upload_to='products/', blank=True, null=True)
     price = models.DecimalField('Цена', max_digits=10, decimal_places=2)
     in_stock = models.BooleanField('В наличии', default=True)
-    flavors = models.ManyToManyField(Flavor, blank=True, verbose_name='Доступные вкусы')
+    flavors = models.TextField('Вкусы', blank=True, default='', help_text='Введите каждый вкус с новой строки')
     created_at = models.DateTimeField('Добавлен', auto_now_add=True)
 
     class Meta:
@@ -54,7 +42,6 @@ class Product(models.Model):
     def save(self, *args, **kwargs):
         if not self.slug or self.slug == '':
             self.slug = slugify(self.name)
-            # Если такой slug уже есть, добавляем ID
             if Product.objects.filter(slug=self.slug).exclude(id=self.id).exists():
                 import time
                 self.slug = f"{self.slug}-{int(time.time())}"
@@ -66,16 +53,17 @@ class Product(models.Model):
     def get_absolute_url(self):
         return reverse('catalog:product_detail', args=[self.slug])
 
+    def get_flavors_list(self):
+        """Возвращает список вкусов из текстового поля"""
+        if self.flavors:
+            return [f.strip() for f in self.flavors.split('\n') if f.strip()]
+        return []
+
 
 class Order(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='Товар')
-    flavor = models.ForeignKey(Flavor, on_delete=models.SET_NULL, null=True, blank=True,
-                               verbose_name='Выбранный вкус')
-    telegram = models.CharField(
-        'Telegram',
-        max_length=100,
-        help_text='Введите ваш Telegram-ник без @'  # Валидация в forms.py
-    )
+    flavors = models.TextField('Выбранные вкусы', blank=True, help_text='Вкусы через запятую')
+    telegram = models.CharField('Telegram', max_length=100)
     comment = models.TextField('Комментарий', blank=True)
     created_at = models.DateTimeField('Дата заказа', auto_now_add=True)
 
