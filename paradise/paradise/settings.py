@@ -11,7 +11,8 @@ SECRET_KEY = 'django-insecure-your-secret-key-here'
 DEBUG = True
 
 ALLOWED_HOSTS = [
-'https://online-vapeshop-paradise-production.up.railway.app/',
+'online-vapeshop-paradise-production.up.railway.app',  # Ваш домен
+    '.railway.app',
     'localhost',
     '127.0.0.1',
     'sad-dragons-like.loca.lt',  # ← Добавьте ваш домен из LocalTunnel
