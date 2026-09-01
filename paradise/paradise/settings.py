@@ -6,18 +6,10 @@ load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-your-secret-key-here'
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-for-dev')
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-DEBUG = False
-
-ALLOWED_HOSTS = ['*',
-'online-vapeshop-paradise-production.up.railway.app',  # Ваш домен
-    '.railway.app',
-    'localhost',
-    '127.0.0.1',
-    'sad-dragons-like.loca.lt',  # ← Добавьте ваш домен из LocalTunnel
-    '.loca.lt',
-]
+ALLOWED_HOSTS = ['*']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
