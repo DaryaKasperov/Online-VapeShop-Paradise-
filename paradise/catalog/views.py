@@ -34,14 +34,16 @@ def product_list(request, category_slug=None):
         'products': products,
     }
     return render(request, 'catalog/index.html', context)
+
+
 def product_detail(request, slug):
     """Страница одного товара с отзывами"""
     product = get_object_or_404(Product, slug=slug, in_stock=True)
     reviews = product.reviews.filter(is_approved=True).order_by('-created_at')
 
-    # Получаем списки вкусов и цветов
     flavors_list = product.get_flavors_list()
     colors_list = product.get_colors_list()
+    categories = Category.objects.all()  # ← Добавьте это
 
     if request.method == 'POST':
         form = ReviewForm(request.POST)
@@ -58,10 +60,11 @@ def product_detail(request, slug):
     context = {
         'product': product,
         'flavors': flavors_list,
-        'colors': colors_list,  # ← Добавьте цвета
+        'colors': colors_list,
         'reviews': reviews,
         'review_form': form,
         'order_form': OrderForm(),
+        'categories': categories,  # ← Добавьте это
     }
     return render(request, 'catalog/product_detail.html', context)
 def order_create(request, product_id):
@@ -72,29 +75,45 @@ def order_create(request, product_id):
         telegram = request.POST.get('telegram', '').strip()
         flavor = request.POST.get('flavor', '')
         color = request.POST.get('color', '')
+        quantity = request.POST.get('quantity', 1)
         comment = request.POST.get('comment', '')
 
         if not telegram:
             messages.error(request, 'Пожалуйста, введите ваш Telegram-ник')
             return redirect('catalog:product_detail', slug=product.slug)
 
+        # Проверяем количество
+        try:
+            quantity = int(quantity)
+            if quantity < 1:
+                quantity = 1
+            if quantity > product.quantity:
+                messages.error(request, f'Доступно только {product.quantity} шт.')
+                return redirect('catalog:product_detail', slug=product.slug)
+        except:
+            quantity = 1
+
         order = Order.objects.create(
             product=product,
             telegram=telegram,
             flavor=flavor,
             color=color,
+            quantity=quantity,
             comment=comment
         )
 
-        send_telegram_notification(order, product, flavor, color)
+        # Уменьшаем количество на складе
+        product.quantity -= quantity
+        product.save()
+
+        send_telegram_notification(order, product, flavor, color, quantity)
 
         messages.success(request, f'Спасибо! Ваш заказ на "{product.name}" принят!')
         return redirect('catalog:product_detail', slug=product.slug)
 
     return redirect('catalog:product_detail', slug=product.slug)
 
-
-def send_telegram_notification(order, product, flavor, color):
+def send_telegram_notification(order, product, flavor, color, quantity):
     """Отправка уведомления в Telegram"""
     bot_token = os.getenv('TG_BOT_TOKEN')
     chat_id = os.getenv('TG_CHAT_ID')
@@ -105,6 +124,7 @@ def send_telegram_notification(order, product, flavor, color):
 
     flavor_text = f"\n🍽️ *Вкус:* {flavor}" if flavor else ""
     color_text = f"\n🎨 *Цвет:* {color}" if color else ""
+    quantity_text = f"\n📦 *Количество:* {quantity}" if quantity else ""
     telegram_link = f"https://t.me/{order.telegram}" if order.telegram else ""
 
     message = f"""
@@ -113,6 +133,7 @@ def send_telegram_notification(order, product, flavor, color):
 📦 *Товар:* {product.name}
 {flavor_text}
 {color_text}
+{quantity_text}
 📝 *Комментарий:* {order.comment or 'Нет'}
 
 👤 *Покупатель:* [{order.telegram}]({telegram_link})

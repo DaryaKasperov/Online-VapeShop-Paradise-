@@ -32,6 +32,11 @@
                 </div>
 
                 <div class="mb-3">
+                    <label class="form-label">Количество на складе</label>
+                    {{ form.quantity }}
+                </div>
+
+                <div class="mb-3">
                     <label class="form-label">Изображение</label>
                     {{ form.image }}
                     {% if form.instance.image %}
@@ -46,14 +51,12 @@
                     <label class="form-check-label">В наличии</label>
                 </div>
 
-                <!-- ========== ВКУСЫ ========== -->
                 <div class="mb-3">
                     <label class="form-label">Вкусы (каждый с новой строки)</label>
                     {{ form.flavors }}
                     <small class="text-muted d-block mt-1">Например: Клубника, Шоколад, Ваниль</small>
                 </div>
 
-                <!-- ========== ЦВЕТА ========== -->
                 <div class="mb-3">
                     <label class="form-label">Цвета (каждый с новой строки)</label>
                     {{ form.colors }}

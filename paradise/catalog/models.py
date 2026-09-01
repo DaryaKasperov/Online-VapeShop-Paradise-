@@ -61,6 +61,7 @@ class Product(models.Model):
     image = models.ImageField('Изображение', upload_to='products/', blank=True, null=True)
     price = models.DecimalField('Цена', max_digits=10, decimal_places=2)
     in_stock = models.BooleanField('В наличии', default=True)
+    quantity = models.PositiveIntegerField('Количество', default=0)
     flavors = models.TextField('Вкусы', blank=True, default='', help_text='Введите каждый вкус с новой строки')
     colors = models.TextField('Цвета', blank=True, default='', help_text='Введите каждый цвет с новой строки')
     created_at = models.DateTimeField('Добавлен', auto_now_add=True)
@@ -129,6 +130,7 @@ class Order(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='Товар')
     flavor = models.CharField('Выбранный вкус', max_length=100, blank=True)
     color = models.CharField('Выбранный цвет', max_length=100, blank=True)
+    quantity = models.PositiveIntegerField('Количество', default=1)
     telegram = models.CharField('Telegram', max_length=100)
     comment = models.TextField('Комментарий', blank=True)
     created_at = models.DateTimeField('Дата заказа', auto_now_add=True)
@@ -140,6 +142,7 @@ class Order(models.Model):
 
     def __str__(self):
         return f'Заказ от @{self.telegram} на {self.product.name}'
+
 
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE,

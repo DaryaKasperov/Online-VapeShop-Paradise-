@@ -12,14 +12,14 @@ class CategoryAdmin(admin.ModelAdmin):
 
 @admin.register(Product)
 class ProductAdmin(admin.ModelAdmin):
-    list_display = ['name', 'category', 'price', 'in_stock', 'image_preview']
-    list_editable = ['price', 'in_stock']
+    list_display = ['name', 'category', 'price', 'quantity', 'in_stock', 'image_preview']
+    list_editable = ['price', 'quantity', 'in_stock']
     list_filter = ['category', 'in_stock']
     search_fields = ['name']
     prepopulated_fields = {'slug': ('name',)}
     list_per_page = 20
 
-    fields = ['name', 'slug', 'category', 'image', 'price', 'in_stock', 'flavors', 'colors']
+    fields = ['name', 'slug', 'category', 'image', 'price', 'quantity', 'in_stock', 'flavors', 'colors']
 
     def image_preview(self, obj):
         if obj.image:

@@ -5,7 +5,55 @@
 
 {% block content %}
 <div class="row">
-    <div class="col-12">
+    <!-- ========== ФИЛЬТРЫ ========== -->
+    <div class="col-lg-3 col-md-4 mb-4">
+        <div class="filter-card card">
+            <div class="card-header" id="filterHeader">
+                <span><i class="fas fa-sliders-h" style="color: var(--glow-blue); margin-right: 10px;"></i>Фильтры</span>
+                <span class="toggle-icon"><i class="fas fa-chevron-down"></i></span>
+            </div>
+            <div class="card-body" id="filterBody">
+                <form method="get" id="filterForm">
+                    <!-- Поиск -->
+                    <div class="mb-3">
+                        <label for="id_search">
+                            <i class="fas fa-search"></i> Поиск
+                        </label>
+                        <input type="text" name="search" id="id_search"
+                               class="form-control"
+                               placeholder="Введите название товара..."
+                               value="{{ request.GET.search }}">
+                    </div>
+
+                    <!-- Категория -->
+                    <div class="mb-3">
+                        <label for="id_category">
+                            <i class="fas fa-tags"></i> Категория
+                        </label>
+                        <select name="category" id="id_category" class="form-select">
+                            <option value="">Все категории</option>
+                            {% for cat in categories %}
+                            <option value="{{ cat.id }}"
+                                    {% if request.GET.category|add:"0" == cat.id %}selected{% endif %}>
+                                {{ cat.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">
+                        <i class="fas fa-check"></i> Применить
+                    </button>
+                    <a href="{% url 'catalog:product_list' %}" class="btn btn-secondary w-100 mt-2">
+                        <i class="fas fa-undo"></i> Сбросить
+                    </a>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== ТОВАРЫ ========== -->
+    <div class="col-lg-9 col-md-8">
         <h1 class="page-title">Добро пожаловать в Paradise</h1>
         <p class="page-subtitle">Лучшие товары для вас</p>
 

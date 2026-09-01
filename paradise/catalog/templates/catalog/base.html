@@ -39,6 +39,13 @@
                         <a class="nav-link" href="{{ cat.get_absolute_url }}">{{ cat.name }}</a>
                     </li>
                     {% endfor %}
+
+                     <li class="nav-item">
+        <a class="nav-link" href="{% url 'dashboard:index' %}" style="color: var(--glow-blue) !important;">
+            <i class="fas fa-crown"></i> Админка
+        </a>
+    </li>
+</ul>
                 </ul>
             </div>
         </div>

@@ -70,6 +70,20 @@
                 </div>
                 {% endif %}
 
+                <!-- Поле количества -->
+<div class="mb-3">
+    <label for="id_quantity" class="form-label">
+        <i class="fas fa-cubes" style="color: var(--glow-blue);"></i>
+        Количество
+    </label>
+    <div class="quantity-selector">
+        <button type="button" class="quantity-btn minus" onclick="changeQuantity(-1)">−</button>
+        <input type="number" id="id_quantity" name="quantity" value="1" min="1" max="{{ product.quantity }}">
+        <button type="button" class="quantity-btn plus" onclick="changeQuantity(1)">+</button>
+    </div>
+    <small class="text-muted">Доступно: {{ product.quantity }} шт.</small>
+</div>
+
                 <!-- Поле Telegram -->
                 <div class="mb-3 telegram-input-wrapper">
                     <label for="id_telegram" class="form-label">
@@ -217,6 +231,39 @@
 
 {% block extra_js %}
 <script>
+
+    // ========== УПРАВЛЕНИЕ КОЛИЧЕСТВОМ ==========
+function changeQuantity(delta) {
+    const input = document.getElementById('id_quantity');
+    const max = parseInt(input.getAttribute('max')) || 999;
+    let newValue = parseInt(input.value) + delta;
+
+    if (newValue < 1) newValue = 1;
+    if (newValue > max) newValue = max;
+
+    input.value = newValue;
+}
+
+// Ограничение ввода
+document.addEventListener('DOMContentLoaded', function() {
+    const quantityInput = document.getElementById('id_quantity');
+    if (quantityInput) {
+        const max = parseInt(quantityInput.getAttribute('max')) || 999;
+
+        quantityInput.addEventListener('change', function() {
+            let value = parseInt(this.value);
+            if (isNaN(value) || value < 1) this.value = 1;
+            if (value > max) this.value = max;
+        });
+
+        quantityInput.addEventListener('blur', function() {
+            let value = parseInt(this.value);
+            if (isNaN(value) || value < 1) this.value = 1;
+        });
+    }
+});
+
+
     // Автоматическое скрытие ошибки при вводе
     document.addEventListener('DOMContentLoaded', function() {
         var telegramInput = document.getElementById('id_telegram');

@@ -10,7 +10,13 @@ SECRET_KEY = 'django-insecure-your-secret-key-here'
 
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = [
+'https://online-vapeshop-paradise-production.up.railway.app/',
+    'localhost',
+    '127.0.0.1',
+    'sad-dragons-like.loca.lt',  # ← Добавьте ваш домен из LocalTunnel
+    '.loca.lt',
+]
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -22,6 +28,7 @@ INSTALLED_APPS = [
     'catalog',
     'django_filters',
 'dashboard',
+'sslserver',
 ]
 
 MIDDLEWARE = [
