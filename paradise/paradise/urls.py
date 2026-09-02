@@ -12,8 +12,6 @@ urlpatterns = [
     path('', include('catalog.urls', namespace='catalog')),
     path('dashboard/', include('dashboard.urls', namespace='dashboard')),
     path('favicon.ico', favicon_view),
-]
+] + static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
 
-if settings.DEBUG:
-    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
-    urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
+urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
