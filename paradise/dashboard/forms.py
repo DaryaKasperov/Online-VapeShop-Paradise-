@@ -7,14 +7,13 @@ class DashboardProductForm(forms.ModelForm):
 
     class Meta:
         model = Product
-        fields = ['category', 'name', 'price', 'image', 'in_stock', 'flavors', 'colors']
+        fields = ['category', 'name', 'price', 'image',  'flavors', 'colors']
         widgets = {
             'category': forms.Select(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название товара'}),
             'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
-            'in_stock': forms.CheckboxInput(attrs={'class': 'form-check-input'}),
-            'flavors': forms.Textarea(attrs={
+             'flavors': forms.Textarea(attrs={
                 'class': 'form-control',
                 'rows': 5,
                 'placeholder': 'Введите каждый вкус с новой строки\nНапример:\nКлубника\nШоколад\nВаниль'
@@ -30,7 +29,6 @@ class DashboardProductForm(forms.ModelForm):
             'name': 'Название',
             'price': 'Цена',
             'image': 'Изображение',
-            'in_stock': 'В наличии',
             'flavors': 'Вкусы (каждый с новой строки)',
             'colors': 'Цвета (каждый с новой строки)',
         }

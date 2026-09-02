@@ -36,10 +36,21 @@
                 <td>{{ product.category.name }}</td>
                 <td>{{ product.price }} BYN</td>
                 <td>
-                    {% if product.in_stock %}
-                    <span class="badge bg-success">Да</span>
+                    {% if product.has_stock %}
+                        <span class="badge bg-success">В наличии</span>
+                        <small class="text-muted d-block">
+                            {% if product.flavor_stocks.all %}
+                                Вкусы: {{ product.flavor_stocks.all|length }}
+                            {% endif %}
+                            {% if product.color_stocks.all %}
+                                Цвета: {{ product.color_stocks.all|length }}
+                            {% endif %}
+                            {% if product.quantity > 0 %}
+                                Кол-во: {{ product.quantity }}
+                            {% endif %}
+                        </small>
                     {% else %}
-                    <span class="badge bg-danger">Нет</span>
+                        <span class="badge bg-danger">Нет в наличии</span>
                     {% endif %}
                 </td>
                 <td>

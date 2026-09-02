@@ -2,8 +2,10 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
-from catalog.models import Product, Category, Order
+from django.http import HttpResponse
+from catalog.models import Product, Category, Order, FlavorStock, ColorStock
 from catalog.forms import ProductForm, CategoryForm
+
 
 
 # Проверка, что пользователь админ
@@ -60,26 +62,58 @@ def dashboard_index(request):
 @login_required(login_url='dashboard:login')
 @user_passes_test(is_admin, login_url='dashboard:login')
 def product_list_admin(request):
-    """Список товаров в админке"""
-    products = Product.objects.all().order_by('-created_at')
-    return render(request, 'dashboard/products.html', {'products': products})
+    """Список товаров в админке с отображением наличия"""
+    try:
+        products = Product.objects.all().order_by('-created_at')
 
+        # Добавляем статус наличия для каждого товара
+        for product in products:
+            product.stock_status = product.get_stock_status()
+
+        return render(request, 'dashboard/products.html', {'products': products})
+    except Exception as e:
+        import traceback
+        error_text = traceback.format_exc()
+        print(error_text)
+        return HttpResponse(f"<pre>{error_text}</pre>", status=500)
 
 @login_required(login_url='dashboard:login')
 @user_passes_test(is_admin, login_url='dashboard:login')
 def product_create(request):
-    """Создание товара"""
+    """Создание товара с вкусами, цветами и количеством"""
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES)
         if form.is_valid():
-            product = form.save(commit=False)
-            # Сохраняем цвета и вкусы из POST
-            colors = request.POST.get('colors', '')
-            flavors = request.POST.get('flavors', '')
-            product.colors = colors
-            product.flavors = flavors
-            product.save()
-            form.save_m2m()
+            product = form.save()
+
+            # Добавляем вкусы
+            flavors = request.POST.getlist('flavors[]')
+            flavors_quantities = request.POST.getlist('flavors_quantities[]')
+            for flavor, qty in zip(flavors, flavors_quantities):
+                if flavor and qty:
+                    try:
+                        FlavorStock.objects.create(
+                            product=product,
+                            flavor=flavor.strip(),
+                            quantity=int(qty)
+                        )
+                    except:
+                        pass
+
+            # Добавляем цвета
+            colors = request.POST.getlist('colors[]')
+            colors_quantities = request.POST.getlist('colors_quantities[]')
+            for color, qty in zip(colors, colors_quantities):
+                if color and qty:
+                    try:
+                        ColorStock.objects.create(
+                            product=product,
+                            color=color.strip(),
+                            quantity=int(qty)
+                        )
+                    except:
+                        pass
+
             messages.success(request, 'Товар успешно создан!')
             return redirect('dashboard:products')
         else:
@@ -92,26 +126,56 @@ def product_create(request):
 @login_required(login_url='dashboard:login')
 @user_passes_test(is_admin, login_url='dashboard:login')
 def product_edit(request, product_id):
-    """Редактирование товара"""
+    """Редактирование товара с вкусами, цветами и количеством"""
     product = get_object_or_404(Product, id=product_id)
+
     if request.method == 'POST':
         form = ProductForm(request.POST, request.FILES, instance=product)
         if form.is_valid():
-            product = form.save(commit=False)
-            # Сохраняем цвета и вкусы из POST
-            colors = request.POST.get('colors', '')
-            flavors = request.POST.get('flavors', '')
-            product.colors = colors
-            product.flavors = flavors
-            product.save()
-            form.save_m2m()
+            product = form.save()
+
+            # Обновляем вкусы
+            product.flavor_stocks.all().delete()
+            flavors = request.POST.getlist('flavors[]')
+            flavors_quantities = request.POST.getlist('flavors_quantities[]')
+            for flavor, qty in zip(flavors, flavors_quantities):
+                if flavor and qty:
+                    try:
+                        FlavorStock.objects.create(
+                            product=product,
+                            flavor=flavor.strip(),
+                            quantity=int(qty)
+                        )
+                    except:
+                        pass
+
+            # Обновляем цвета
+            product.color_stocks.all().delete()
+            colors = request.POST.getlist('colors[]')
+            colors_quantities = request.POST.getlist('colors_quantities[]')
+            for color, qty in zip(colors, colors_quantities):
+                if color and qty:
+                    try:
+                        ColorStock.objects.create(
+                            product=product,
+                            color=color.strip(),
+                            quantity=int(qty)
+                        )
+                    except:
+                        pass
+
             messages.success(request, 'Товар обновлен!')
             return redirect('dashboard:products')
         else:
             messages.error(request, 'Ошибка при обновлении товара. Проверьте поля.')
     else:
         form = ProductForm(instance=product)
-    return render(request, 'dashboard/product_form.html', {'form': form, 'title': 'Редактировать товар'})
+
+    return render(request, 'dashboard/product_form.html', {
+        'form': form,
+        'title': 'Редактировать товар',
+        'product': product
+    })
 
 
 @login_required(login_url='dashboard:login')

@@ -1546,3 +1546,16 @@ footer p {
 .quantity-selector input[type="number"]:focus {
     border-color: var(--glow-blue);
 }
+
+.flavor-stock {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: auto;
+}
+
+.flavor-option input[type="radio"]:checked + .flavor-label .flavor-stock {
+    color: var(--glow-blue);
+}

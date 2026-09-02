@@ -28,67 +28,111 @@
             <form method="post" action="{% url 'catalog:order_create' product.id %}">
                 {% csrf_token %}
 
+                <!-- Сообщения -->
+                {% if messages %}
+                    <div class="messages-container">
+                        {% for message in messages %}
+                            {% if message.tags == 'error' %}
+                                <div class="error-message">
+                                    <span class="error-icon">🚫</span>
+                                    <span class="error-text">{{ message }}</span>
+                                </div>
+                            {% else %}
+                                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                                    {{ message }}
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                                </div>
+                            {% endif %}
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
                 <!-- Выбор вкуса -->
-                {% if flavors %}
+                {% if has_flavors %}
                 <div class="mb-3">
-                    <label class="form-label">Выберите вкус</label>
-                    <div class="row row-cols-2 row-cols-sm-3 g-2">
-                        {% for flavor in flavors %}
-                        <div class="col">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="flavor"
-                                       id="flavor_{{ forloop.counter }}" value="{{ flavor }}"
-                                       {% if forloop.first %}checked{% endif %}>
-                                <label class="form-check-label" for="flavor_{{ forloop.counter }}">
-                                    {{ flavor }}
-                                </label>
+                    <label class="form-label">Выберите вкусы</label>
+                    <div class="flavors-grid">
+                        {% for flavor_item in flavors %}
+                        <div class="flavor-option" data-flavor="{{ flavor_item.flavor }}" data-max="{{ flavor_item.quantity }}">
+                            <input type="checkbox" name="flavors[]" id="flavor_{{ forloop.counter }}"
+                                   value="{{ flavor_item.flavor }}">
+                            <label for="flavor_{{ forloop.counter }}" class="flavor-label">
+                                <span class="flavor-icon">🍭</span>
+                                <span class="flavor-name">{{ flavor_item.flavor }}</span>
+                                <span class="flavor-stock">В наличии: {{ flavor_item.quantity }}</span>
+                                <span class="flavor-check"><i class="fas fa-check"></i></span>
+                            </label>
+                            <div class="flavor-quantity">
+                                <button type="button" class="qty-btn minus" onclick="changeFlavorQuantity(this, -1)">−</button>
+                                <input type="number" name="flavor_quantity_{{ flavor_item.flavor }}"
+                                       class="flavor-qty-input" value="1" min="1" max="{{ flavor_item.quantity }}">
+                                <button type="button" class="qty-btn plus" onclick="changeFlavorQuantity(this, 1)">+</button>
                             </div>
                         </div>
                         {% endfor %}
                     </div>
+                    <input type="hidden" name="selected_flavors" id="selected_flavors1" value="">
+                    <small class="text-muted">Выберите вкус или цвет ниже</small>
                 </div>
                 {% endif %}
 
                 <!-- Выбор цвета -->
-                {% if colors %}
+                {% if has_colors %}
                 <div class="mb-3">
-                    <label class="form-label">Выберите цвет</label>
-                    <div class="row row-cols-2 row-cols-sm-3 g-2">
-                        {% for color in colors %}
-                        <div class="col">
-                            <div class="form-check">
-                                <input class="form-check-input" type="radio" name="color"
-                                       id="color_{{ forloop.counter }}" value="{{ color }}"
-                                       {% if forloop.first %}checked{% endif %}>
-                                <label class="form-check-label" for="color_{{ forloop.counter }}">
-                                    {{ color }}
-                                </label>
+                    <label class="form-label">Выберите цвета</label>
+                    <div class="colors-grid">
+                        {% for color_item in colors %}
+                        <div class="color-option" data-color="{{ color_item.color }}" data-max="{{ color_item.quantity }}">
+                            <input type="checkbox" name="colors[]" id="color_{{ forloop.counter }}"
+                                   value="{{ color_item.color }}">
+                            <label for="color_{{ forloop.counter }}" class="color-label">
+                                <span class="color-icon">🎨</span>
+                                <span class="color-name">{{ color_item.color }}</span>
+                                <span class="color-stock">В наличии: {{ color_item.quantity }}</span>
+                                <span class="color-check"><i class="fas fa-check"></i></span>
+                            </label>
+                            <div class="color-quantity">
+                                <button type="button" class="qty-btn minus" onclick="changeColorQuantity(this, -1)">−</button>
+                                <input type="number" name="color_quantity_{{ color_item.color }}"
+                                       class="color-qty-input" value="1" min="1" max="{{ color_item.quantity }}">
+                                <button type="button" class="qty-btn plus" onclick="changeColorQuantity(this, 1)">+</button>
                             </div>
                         </div>
                         {% endfor %}
                     </div>
+                    <input type="hidden" name="selected_colors" id="selected_colors1" value="">
+                    <small class="text-muted">Выберите цвет или вкус выше</small>
                 </div>
                 {% endif %}
 
-                <!-- Поле количества -->
-<div class="mb-3">
-    <label for="id_quantity" class="form-label">
-        <i class="fas fa-cubes" style="color: var(--glow-blue);"></i>
-        Количество
-    </label>
-    <div class="quantity-selector">
-        <button type="button" class="quantity-btn minus" onclick="changeQuantity(-1)">−</button>
-        <input type="number" id="id_quantity" name="quantity" value="1" min="1" max="{{ product.quantity }}">
-        <button type="button" class="quantity-btn plus" onclick="changeQuantity(1)">+</button>
-    </div>
-    <small class="text-muted">Доступно: {{ product.quantity }} шт.</small>
-</div>
+                <!-- Простое количество (для товаров без вкусов и цветов) -->
+                {% if not has_flavors and not has_colors and has_simple_quantity %}
+                <div class="mb-3">
+                    <label class="form-label">Количество</label>
+                    <div class="quantity-selector">
+                        <button type="button" class="qty-btn minus" onclick="changeSimpleQuantity(-1)">−</button>
+                        <input type="number" id="simple_quantity" name="quantity" value="1" min="1" max="{{ product.quantity }}">
+                        <button type="button" class="qty-btn plus" onclick="changeSimpleQuantity(1)">+</button>
+                    </div>
+                    <small class="text-muted">Доступно: {{ product.quantity }} шт.</small>
+                    <input type="hidden" name="selected_flavors" id="selected_flavors" value="">
+                    <input type="hidden" name="selected_colors" id="selected_colors" value="">
+                </div>
+                {% endif %}
+
+                <!-- Если нет ничего в наличии -->
+                {% if not has_flavors and not has_colors and not has_simple_quantity %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Товар временно недоступен
+                </div>
+                {% endif %}
 
                 <!-- Поле Telegram -->
                 <div class="mb-3 telegram-input-wrapper">
                     <label for="id_telegram" class="form-label">
                         <i class="fab fa-telegram-plane" style="color: var(--glow-blue);"></i>
-                        Ваш Telegram-ник
+                        Ваш Telegram-ник <span style="color: #ff4444;">*</span>
                     </label>
                     <div class="input-group">
                         <span class="input-group-text">@</span>
@@ -199,26 +243,232 @@
 </div>
 
 <style>
-    /* Стили для ошибки под полем */
-    .field-error {
-        color: #ff4444;
-        font-size: 0.9rem;
-        padding: 8px 12px;
-        margin-top: 6px;
-        background: rgba(255, 68, 68, 0.08);
-        border-left: 3px solid #ff4444;
-        animation: errorSlideDown 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94) forwards;
-        display: block;
+    /* ========== ОБЩИЕ СТИЛИ ДЛЯ ВКУСОВ И ЦВЕТОВ ========== */
+    .flavors-grid, .colors-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        gap: 8px;
+        margin-top: 8px;
     }
 
-    @keyframes errorSlideDown {
-        0% {
-            opacity: 0;
-            transform: translateY(-10px);
+    .flavor-option, .color-option {
+        background: rgba(10, 10, 10, 0.3);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 8px;
+        padding: 10px 12px;
+        transition: all 0.3s ease;
+    }
+
+    .flavor-option:hover, .color-option:hover {
+        border-color: rgba(79, 195, 247, 0.3);
+    }
+
+    .flavor-option input[type="checkbox"],
+    .color-option input[type="checkbox"] {
+        display: none;
+    }
+
+    .flavor-option input[type="checkbox"]:checked + .flavor-label,
+    .color-option input[type="checkbox"]:checked + .color-label {
+        border-color: var(--glow-blue);
+        background: rgba(79, 195, 247, 0.08);
+        color: var(--text-primary);
+    }
+
+    .flavor-option input[type="checkbox"]:checked + .flavor-label .flavor-check,
+    .color-option input[type="checkbox"]:checked + .color-label .color-check {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .flavor-label, .color-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        padding: 10px 14px;
+        background: rgba(10, 10, 10, 0.4);
+        border: 2px solid rgba(255, 255, 255, 0.06);
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.85rem;
+        user-select: none;
+        border-radius: 4px;
+    }
+
+    .flavor-label:hover, .color-label:hover {
+        border-color: rgba(79, 195, 247, 0.3);
+        background: rgba(10, 10, 10, 0.6);
+        transform: translateY(-2px);
+    }
+
+    .flavor-icon, .color-icon {
+        font-size: 1.2rem;
+        flex-shrink: 0;
+    }
+
+    .flavor-name, .color-name {
+        flex: 1;
+        font-weight: 500;
+    }
+
+    .flavor-stock, .color-stock {
+        font-size: 0.7rem;
+        color: var(--text-muted);
+        background: rgba(255, 255, 255, 0.05);
+        padding: 2px 8px;
+        border-radius: 10px;
+        margin-left: auto;
+    }
+
+    .flavor-check, .color-check {
+        opacity: 0;
+        transform: scale(0.5);
+        transition: all 0.3s ease;
+        color: var(--glow-blue);
+        font-size: 0.8rem;
+    }
+
+    .flavor-option input[type="checkbox"]:checked + .flavor-label .flavor-stock,
+    .color-option input[type="checkbox"]:checked + .color-label .color-stock {
+        color: var(--glow-blue);
+    }
+
+    /* ========== ОБЩИЕ СТИЛИ ДЛЯ КНОПОК КОЛИЧЕСТВА ========== */
+    .flavor-quantity, .color-quantity {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 6px;
+        justify-content: center;
+    }
+
+    .flavor-quantity .qty-btn,
+    .color-quantity .qty-btn {
+        background: rgba(10, 10, 10, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        color: var(--text-primary);
+        width: 28px;
+        height: 28px;
+        font-size: 1rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-radius: 4px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .flavor-quantity .qty-btn:hover,
+    .color-quantity .qty-btn:hover {
+        background: rgba(79, 195, 247, 0.15);
+        color: var(--glow-blue);
+    }
+
+    .flavor-qty-input, .color-qty-input {
+        background: rgba(10, 10, 10, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        color: var(--text-primary);
+        width: 40px;
+        height: 28px;
+        text-align: center;
+        font-size: 0.9rem;
+        font-weight: 600;
+        outline: none;
+        border-radius: 4px;
+        -moz-appearance: textfield;
+    }
+
+    .flavor-qty-input::-webkit-outer-spin-button,
+    .flavor-qty-input::-webkit-inner-spin-button,
+    .color-qty-input::-webkit-outer-spin-button,
+    .color-qty-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* ========== ВЫБОР КОЛИЧЕСТВА ========== */
+    .quantity-selector {
+        display: flex;
+        align-items: center;
+        gap: 0;
+        max-width: 150px;
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        border-radius: 4px;
+    }
+
+    .quantity-selector .qty-btn {
+        background: rgba(10, 10, 10, 0.4);
+        border: none;
+        color: var(--text-primary);
+        width: 36px;
+        height: 40px;
+        font-size: 1.2rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .quantity-selector .qty-btn:hover {
+        background: rgba(79, 195, 247, 0.15);
+        color: var(--glow-blue);
+    }
+
+    .quantity-selector input[type="number"] {
+        background: rgba(10, 10, 10, 0.4);
+        border: none;
+        border-left: 1px solid rgba(255, 255, 255, 0.06);
+        border-right: 1px solid rgba(255, 255, 255, 0.06);
+        color: var(--text-primary);
+        width: 60px;
+        height: 40px;
+        text-align: center;
+        font-size: 1rem;
+        font-weight: 600;
+        outline: none;
+        -moz-appearance: textfield;
+    }
+
+    .quantity-selector input[type="number"]::-webkit-outer-spin-button,
+    .quantity-selector input[type="number"]::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* ========== СООБЩЕНИЕ ОБ ОШИБКЕ ========== */
+    .error-message {
+        background: rgba(255, 68, 68, 0.1);
+        border: 2px solid #ff4444;
+        border-radius: 8px;
+        padding: 12px 16px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        animation: errorPulse 0.8s ease 3;
+    }
+
+    .error-message .error-icon {
+        font-size: 1.5rem;
+        flex-shrink: 0;
+    }
+
+    .error-message .error-text {
+        color: #ff4444;
+        font-size: 1rem;
+        font-weight: 500;
+    }
+
+    @keyframes errorPulse {
+        0%, 100% {
+            transform: scale(1);
+            box-shadow: 0 0 40px rgba(255, 68, 68, 0.1);
         }
-        100% {
-            opacity: 1;
-            transform: translateY(0);
+        50% {
+            transform: scale(1.01);
+            box-shadow: 0 0 60px rgba(255, 68, 68, 0.2);
         }
     }
 
@@ -227,66 +477,135 @@
         box-shadow: 0 0 20px rgba(255, 68, 68, 0.1) !important;
         border-width: 2px !important;
     }
+
+    /* ========== АДАПТАЦИЯ ДЛЯ МОБИЛЬНЫХ ========== */
+    @media (max-width: 576px) {
+        .flavors-grid, .colors-grid {
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 6px;
+        }
+
+        .flavor-option .flavor-label,
+        .color-option .color-label {
+            padding: 8px 10px;
+            font-size: 0.75rem;
+        }
+    }
 </style>
 
 {% block extra_js %}
 <script>
-
-    // ========== УПРАВЛЕНИЕ КОЛИЧЕСТВОМ ==========
-function changeQuantity(delta) {
-    const input = document.getElementById('id_quantity');
-    const max = parseInt(input.getAttribute('max')) || 999;
+// ========== ОБЩАЯ ФУНКЦИЯ ДЛЯ ИЗМЕНЕНИЯ КОЛИЧЕСТВА ==========
+function changeQuantity(btn, delta, inputClass) {
+    const container = btn.closest('.flavor-quantity, .color-quantity');
+    const input = container.querySelector(inputClass);
+    const max = parseInt(input.max) || 999;
     let newValue = parseInt(input.value) + delta;
-
     if (newValue < 1) newValue = 1;
     if (newValue > max) newValue = max;
+    input.value = newValue;
+    updateSelections();
+}
 
+// ========== ОБЩАЯ ФУНКЦИЯ ДЛЯ СБОРА ВЫБРАННЫХ ЭЛЕМЕНТОВ ==========
+function getSelectedItems(containerClass, inputClass, hiddenInputId) {
+    const items = document.querySelectorAll(containerClass);
+    const selected = [];
+    items.forEach(function(el) {
+        const checkbox = el.querySelector('input[type="checkbox"]');
+        if (checkbox && checkbox.checked) {
+            const qtyInput = el.querySelector(inputClass);
+            const name = checkbox.value;
+            const quantity = qtyInput ? qtyInput.value : 1;
+            selected.push(name + ':' + quantity);
+        }
+    });
+    const hiddenInput = document.getElementById(hiddenInputId);
+    if (hiddenInput) {
+        hiddenInput.value = selected.join(',');
+    }
+    return selected;
+}
+
+// ========== ОБНОВЛЕНИЕ ВЫБРАННЫХ ЗНАЧЕНИЙ ==========
+function updateSelections() {
+    updateSelectedFlavors();
+    updateSelectedColors();
+}
+
+function updateSelectedFlavors() {
+    return getSelectedItems('.flavor-option', '.flavor-qty-input', 'selected_flavors');
+}
+
+function updateSelectedColors() {
+    return getSelectedItems('.color-option', '.color-qty-input', 'selected_colors');
+}
+
+// ========== ФУНКЦИИ ДЛЯ КНОПОК КОЛИЧЕСТВА ==========
+function changeFlavorQuantity(btn, delta) {
+    changeQuantity(btn, delta, '.flavor-qty-input');
+}
+
+function changeColorQuantity(btn, delta) {
+    changeQuantity(btn, delta, '.color-qty-input');
+}
+
+// ========== ПРОСТОЕ КОЛИЧЕСТВО ==========
+function changeSimpleQuantity(delta) {
+    const input = document.getElementById('simple_quantity');
+    if (!input) return;
+    const max = parseInt(input.max) || 999;
+    let newValue = parseInt(input.value) + delta;
+    if (newValue < 1) newValue = 1;
+    if (newValue > max) newValue = max;
     input.value = newValue;
 }
 
-// Ограничение ввода
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
 document.addEventListener('DOMContentLoaded', function() {
-    const quantityInput = document.getElementById('id_quantity');
-    if (quantityInput) {
-        const max = parseInt(quantityInput.getAttribute('max')) || 999;
+    // Вкусы
+    const flavorCheckboxes = document.querySelectorAll('.flavor-option input[type="checkbox"]');
+    flavorCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateSelections);
+    });
+    document.querySelectorAll('.flavor-qty-input').forEach(function(input) {
+        input.addEventListener('input', updateSelections);
+    });
 
-        quantityInput.addEventListener('change', function() {
-            let value = parseInt(this.value);
-            if (isNaN(value) || value < 1) this.value = 1;
-            if (value > max) this.value = max;
+    // Цвета
+    const colorCheckboxes = document.querySelectorAll('.color-option input[type="checkbox"]');
+    colorCheckboxes.forEach(function(cb) {
+        cb.addEventListener('change', updateSelections);
+    });
+    document.querySelectorAll('.color-qty-input').forEach(function(input) {
+        input.addEventListener('input', updateSelections);
+    });
+
+    // Инициализация
+    updateSelections();
+
+    // ========== ВАЛИДАЦИЯ TELEGRAM ==========
+    var telegramInput = document.getElementById('id_telegram');
+    var errorContainer = document.querySelector('.field-error');
+
+    if (telegramInput && errorContainer) {
+        telegramInput.addEventListener('input', function() {
+            errorContainer.style.display = 'none';
+            this.classList.remove('error');
         });
 
-        quantityInput.addEventListener('blur', function() {
-            let value = parseInt(this.value);
-            if (isNaN(value) || value < 1) this.value = 1;
+        telegramInput.addEventListener('blur', function() {
+            var value = this.value.replace(/^@/, '');
+            var pattern = /^(?!.*__)[a-zA-Z][a-zA-Z0-9_]{4,31}(?<!_)$/;
+
+            if (value.length > 0 && !pattern.test(value)) {
+                this.classList.add('error');
+            } else {
+                this.classList.remove('error');
+            }
         });
     }
 });
-
-
-    // Автоматическое скрытие ошибки при вводе
-    document.addEventListener('DOMContentLoaded', function() {
-        var telegramInput = document.getElementById('id_telegram');
-        var errorContainer = document.querySelector('.field-error');
-
-        if (telegramInput && errorContainer) {
-            telegramInput.addEventListener('input', function() {
-                errorContainer.style.display = 'none';
-                this.classList.remove('error');
-            });
-
-            telegramInput.addEventListener('blur', function() {
-                var value = this.value.replace(/^@/, '');
-                var pattern = /^(?!.*__)[a-zA-Z][a-zA-Z0-9_]{4,31}(?<!_)$/;
-
-                if (value.length > 0 && !pattern.test(value)) {
-                    this.classList.add('error');
-                } else {
-                    this.classList.remove('error');
-                }
-            });
-        }
-    });
 </script>
 {% endblock %}
 {% endblock %}

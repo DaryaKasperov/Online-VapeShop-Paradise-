@@ -16,26 +16,32 @@
             <form method="post" enctype="multipart/form-data" id="productForm">
                 {% csrf_token %}
 
+                <!-- Категория -->
                 <div class="mb-3">
                     <label class="form-label">Категория</label>
                     {{ form.category }}
                 </div>
 
+                <!-- Название -->
                 <div class="mb-3">
                     <label class="form-label">Название</label>
                     {{ form.name }}
                 </div>
 
+                <!-- Цена -->
                 <div class="mb-3">
                     <label class="form-label">Цена</label>
                     {{ form.price }}
                 </div>
 
+                <!-- ========== КОЛИЧЕСТВО НА СКЛАДЕ ========== -->
                 <div class="mb-3">
                     <label class="form-label">Количество на складе</label>
                     {{ form.quantity }}
+                    <small class="text-muted d-block mt-1">Для товаров без вкусов и цветов</small>
                 </div>
 
+                <!-- Изображение -->
                 <div class="mb-3">
                     <label class="form-label">Изображение</label>
                     {{ form.image }}
@@ -46,21 +52,46 @@
                     {% endif %}
                 </div>
 
-                <div class="mb-3 form-check">
-                    {{ form.in_stock }}
-                    <label class="form-check-label">В наличии</label>
+
+
+                <!-- ========== ВКУСЫ ========== -->
+                <div class="mb-3">
+                    <label class="form-label">Вкусы и количество</label>
+                    <div id="flavors-container">
+                        {% if product %}
+                            {% for fs in product.flavor_stocks.all %}
+                            <div class="flavor-row">
+                                <input type="text" name="flavors[]" value="{{ fs.flavor }}" placeholder="Вкус" class="form-control" style="display:inline-block; width:45%;">
+                                <input type="number" name="flavors_quantities[]" value="{{ fs.quantity }}" placeholder="Кол-во" class="form-control" style="display:inline-block; width:25%;">
+                                <button type="button" class="btn btn-danger btn-sm remove-flavor">✕</button>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-outline-light btn-sm mt-2" id="add-flavor-btn">
+                        <i class="fas fa-plus"></i> Добавить вкус
+                    </button>
+                    <small class="text-muted d-block mt-1">Для товаров с вариантами вкусов</small>
                 </div>
 
+                <!-- ========== ЦВЕТА ========== -->
                 <div class="mb-3">
-                    <label class="form-label">Вкусы (каждый с новой строки)</label>
-                    {{ form.flavors }}
-                    <small class="text-muted d-block mt-1">Например: Клубника, Шоколад, Ваниль</small>
-                </div>
-
-                <div class="mb-3">
-                    <label class="form-label">Цвета (каждый с новой строки)</label>
-                    {{ form.colors }}
-                    <small class="text-muted d-block mt-1">Например: Черный, Белый, Красный</small>
+                    <label class="form-label">Цвета и количество</label>
+                    <div id="colors-container">
+                        {% if product %}
+                            {% for cs in product.color_stocks.all %}
+                            <div class="color-row">
+                                <input type="text" name="colors[]" value="{{ cs.color }}" placeholder="Цвет" class="form-control" style="display:inline-block; width:45%;">
+                                <input type="number" name="colors_quantities[]" value="{{ cs.quantity }}" placeholder="Кол-во" class="form-control" style="display:inline-block; width:25%;">
+                                <button type="button" class="btn btn-danger btn-sm remove-color">✕</button>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
+                    </div>
+                    <button type="button" class="btn btn-outline-light btn-sm mt-2" id="add-color-btn">
+                        <i class="fas fa-plus"></i> Добавить цвет
+                    </button>
+                    <small class="text-muted d-block mt-1">Для товаров с вариантами цветов</small>
                 </div>
 
                 <button type="submit" class="btn btn-primary">
@@ -70,4 +101,77 @@
         </div>
     </div>
 </div>
+
+<style>
+    .flavor-row, .color-row {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        margin-bottom: 8px;
+    }
+    .flavor-row .form-control, .color-row .form-control {
+        display: inline-block !important;
+    }
+    .flavor-row .btn-danger, .color-row .btn-danger {
+        padding: 8px 12px;
+        flex-shrink: 0;
+    }
+    .flavor-row input, .color-row input {
+        flex: 1;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ========== ВКУСЫ ==========
+    const flavorsContainer = document.getElementById('flavors-container');
+    const addFlavorBtn = document.getElementById('add-flavor-btn');
+
+    addFlavorBtn.addEventListener('click', function() {
+        const row = document.createElement('div');
+        row.className = 'flavor-row';
+        row.innerHTML = `
+            <input type="text" name="flavors[]" placeholder="Вкус" class="form-control">
+            <input type="number" name="flavors_quantities[]" placeholder="Кол-во" class="form-control" value="1" min="0">
+            <button type="button" class="btn btn-danger btn-sm remove-flavor">✕</button>
+        `;
+        flavorsContainer.appendChild(row);
+
+        row.querySelector('.remove-flavor').addEventListener('click', function() {
+            row.remove();
+        });
+    });
+
+    document.querySelectorAll('.remove-flavor').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            btn.closest('.flavor-row').remove();
+        });
+    });
+
+    // ========== ЦВЕТА ==========
+    const colorsContainer = document.getElementById('colors-container');
+    const addColorBtn = document.getElementById('add-color-btn');
+
+    addColorBtn.addEventListener('click', function() {
+        const row = document.createElement('div');
+        row.className = 'color-row';
+        row.innerHTML = `
+            <input type="text" name="colors[]" placeholder="Цвет" class="form-control">
+            <input type="number" name="colors_quantities[]" placeholder="Кол-во" class="form-control" value="1" min="0">
+            <button type="button" class="btn btn-danger btn-sm remove-color">✕</button>
+        `;
+        colorsContainer.appendChild(row);
+
+        row.querySelector('.remove-color').addEventListener('click', function() {
+            row.remove();
+        });
+    });
+
+    document.querySelectorAll('.remove-color').forEach(function(btn) {
+        btn.addEventListener('click', function() {
+            btn.closest('.color-row').remove();
+        });
+    });
+});
+</script>
 {% endblock %}

@@ -1,6 +1,22 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Category, Product, Order, Review
+from .models import Category, Product, Order, Review, FlavorStock, ColorStock
+
+
+class FlavorStockInline(admin.TabularInline):
+    model = FlavorStock
+    extra = 1
+    fields = ['flavor', 'quantity']
+    verbose_name = 'Вкус'
+    verbose_name_plural = 'Вкусы и остатки'
+
+
+class ColorStockInline(admin.TabularInline):
+    model = ColorStock
+    extra = 1
+    fields = ['color', 'quantity']
+    verbose_name = 'Цвет'
+    verbose_name_plural = 'Цвета и остатки'
 
 
 @admin.register(Category)
@@ -19,7 +35,9 @@ class ProductAdmin(admin.ModelAdmin):
     prepopulated_fields = {'slug': ('name',)}
     list_per_page = 20
 
-    fields = ['name', 'slug', 'category', 'image', 'price', 'quantity', 'in_stock', 'flavors', 'colors']
+    inlines = [FlavorStockInline, ColorStockInline]
+
+    fields = ['name', 'slug', 'category', 'image', 'price', 'quantity', 'in_stock']
 
     def image_preview(self, obj):
         if obj.image:
@@ -31,18 +49,11 @@ class ProductAdmin(admin.ModelAdmin):
 
 @admin.register(Order)
 class OrderAdmin(admin.ModelAdmin):
-    list_display = ['telegram_link', 'product', 'flavor', 'color', 'created_at']
+    list_display = ['id', 'product', 'flavor', 'color', 'quantity', 'created_at']
     list_filter = ['created_at']
     search_fields = ['telegram', 'product__name', 'flavor', 'color']
     readonly_fields = ['created_at']
-    fields = ['product', 'flavor', 'color', 'telegram', 'comment', 'created_at']
-
-    def telegram_link(self, obj):
-        if obj.telegram:
-            return format_html('<a href="https://t.me/{}" target="_blank">@{}</a>', obj.telegram, obj.telegram)
-        return '-'
-
-    telegram_link.short_description = 'Telegram'
+    fields = ['product', 'flavor', 'color', 'quantity', 'telegram', 'comment', 'created_at']
 
 
 @admin.register(Review)

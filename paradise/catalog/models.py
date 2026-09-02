@@ -1,9 +1,8 @@
 from django.db import models
 from django.urls import reverse
-from django.utils.text import slugify
 import re
 
-
+# ========== КАТЕГОРИЯ ==========
 class Category(models.Model):
     name = models.CharField('Название', max_length=100)
     slug = models.SlugField(unique=True, blank=True)
@@ -22,7 +21,6 @@ class Category(models.Model):
         super().save(*args, **kwargs)
 
     def transliterate(self, text):
-        """Транслитерация русского текста в латиницу"""
         map = {
             'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e',
             'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
@@ -35,11 +33,9 @@ class Category(models.Model):
             'Ф': 'F', 'Х': 'Kh', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Shch',
             'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
         }
-
         result = ''
         for char in text:
             result += map.get(char, char)
-
         result = result.lower()
         result = re.sub(r'[^a-z0-9\s-]', '', result)
         result = re.sub(r'[\s_-]+', '-', result)
@@ -53,6 +49,7 @@ class Category(models.Model):
         return reverse('catalog:category', args=[self.slug])
 
 
+# ========== ТОВАР ==========
 class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE,
                                  related_name='products', verbose_name='Категория')
@@ -61,9 +58,7 @@ class Product(models.Model):
     image = models.ImageField('Изображение', upload_to='products/', blank=True, null=True)
     price = models.DecimalField('Цена', max_digits=10, decimal_places=2)
     in_stock = models.BooleanField('В наличии', default=True)
-    quantity = models.PositiveIntegerField('Количество', default=0)
-    flavors = models.TextField('Вкусы', blank=True, default='', help_text='Введите каждый вкус с новой строки')
-    colors = models.TextField('Цвета', blank=True, default='', help_text='Введите каждый цвет с новой строки')
+    quantity = models.PositiveIntegerField('Количество на складе', default=0)
     created_at = models.DateTimeField('Добавлен', auto_now_add=True)
 
     class Meta:
@@ -84,7 +79,6 @@ class Product(models.Model):
         super().save(*args, **kwargs)
 
     def transliterate(self, text):
-        """Транслитерация русского текста в латиницу"""
         map = {
             'а': 'a', 'б': 'b', 'в': 'v', 'г': 'g', 'д': 'd', 'е': 'e', 'ё': 'e',
             'ж': 'zh', 'з': 'z', 'и': 'i', 'й': 'y', 'к': 'k', 'л': 'l', 'м': 'm',
@@ -97,35 +91,84 @@ class Product(models.Model):
             'Ф': 'F', 'Х': 'Kh', 'Ц': 'Ts', 'Ч': 'Ch', 'Ш': 'Sh', 'Щ': 'Shch',
             'Ъ': '', 'Ы': 'Y', 'Ь': '', 'Э': 'E', 'Ю': 'Yu', 'Я': 'Ya'
         }
-
         result = ''
         for char in text:
             result += map.get(char, char)
-
-        import re
         result = result.lower()
         result = re.sub(r'[^a-z0-9\s-]', '', result)
         result = re.sub(r'[\s_-]+', '-', result)
         result = re.sub(r'^-+|-+$', '', result)
         return result
 
-    def get_flavors_list(self):
-        """Возвращает список вкусов из текстового поля"""
-        if self.flavors:
-            return [f.strip() for f in self.flavors.split('\n') if f.strip()]
-        return []
+    def has_stock(self):
+        """Проверяет, есть ли у товара хоть что-то в наличии"""
+        has_flavor = self.flavor_stocks.filter(quantity__gt=0).exists()
+        has_color = self.color_stocks.filter(quantity__gt=0).exists()
+        has_simple_quantity = self.quantity > 0
+        return has_flavor or has_color or has_simple_quantity
 
-    def get_colors_list(self):
-        """Возвращает список цветов из текстового поля"""
-        if self.colors:
-            return [c.strip() for c in self.colors.split('\n') if c.strip()]
-        return []
+    def get_stock_status(self):
+        """Возвращает статус наличия для отображения"""
+        if self.has_stock():
+            return 'В наличии'
+        return 'Нет в наличии'
+
+    def get_flavors_with_stock(self):
+        """Возвращает список вкусов с остатками"""
+        return self.flavor_stocks.filter(quantity__gt=0).order_by('flavor')
+
+    def get_colors_with_stock(self):
+        """Возвращает список цветов с остатками"""
+        return self.color_stocks.filter(quantity__gt=0).order_by('color')
+
+    def get_total_quantity(self):
+        """Общее количество всех вкусов и цветов"""
+        total = sum(fs.quantity for fs in self.flavor_stocks.all())
+        total += sum(cs.quantity for cs in self.color_stocks.all())
+        return total
 
     def __str__(self):
         return self.name
 
     def get_absolute_url(self):
         return reverse('catalog:product_detail', args=[self.slug])
+
+
+# ========== ОСТАТКИ ВКУСОВ ==========
+class FlavorStock(models.Model):
+    """Модель для хранения количества по каждому вкусу"""
+    product = models.ForeignKey(Product, on_delete=models.CASCADE,
+                               related_name='flavor_stocks', verbose_name='Товар')
+    flavor = models.CharField('Название вкуса', max_length=100)
+    quantity = models.PositiveIntegerField('Количество на складе', default=0)
+
+    class Meta:
+        verbose_name = 'Остаток вкуса'
+        verbose_name_plural = 'Остатки вкусов'
+        unique_together = ['product', 'flavor']
+
+    def __str__(self):
+        return f'{self.product.name} - {self.flavor}: {self.quantity} шт.'
+
+
+# ========== ОСТАТКИ ЦВЕТОВ ==========
+class ColorStock(models.Model):
+    """Модель для хранения количества по каждому цвету"""
+    product = models.ForeignKey(Product, on_delete=models.CASCADE,
+                               related_name='color_stocks', verbose_name='Товар')
+    color = models.CharField('Название цвета', max_length=100)
+    quantity = models.PositiveIntegerField('Количество на складе', default=0)
+
+    class Meta:
+        verbose_name = 'Остаток цвета'
+        verbose_name_plural = 'Остатки цветов'
+        unique_together = ['product', 'color']
+
+    def __str__(self):
+        return f'{self.product.name} - {self.color}: {self.quantity} шт.'
+
+
+# ========== ЗАКАЗ ==========
 class Order(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='Товар')
     flavor = models.CharField('Выбранный вкус', max_length=100, blank=True)
@@ -144,6 +187,7 @@ class Order(models.Model):
         return f'Заказ от @{self.telegram} на {self.product.name}'
 
 
+# ========== ОТЗЫВ ==========
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE,
                                 related_name='reviews', verbose_name='Товар')
