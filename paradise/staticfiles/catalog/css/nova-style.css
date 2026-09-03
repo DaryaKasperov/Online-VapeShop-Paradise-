@@ -70,16 +70,17 @@ h2 {
     left: 0;
     right: 0;
     z-index: 1000;
-    background: rgba(0, 0, 0, 0.92) !important;
+    background: linear-gradient(135deg, #0f0c29, #1a1a3e, #24243e) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     backdrop-filter: blur(15px);
     -webkit-backdrop-filter: blur(15px);
     padding: 16px 0;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
 
 .navbar.scrolled {
-    background: rgba(0, 0, 0, 0.97) !important;
+   background: linear-gradient(135deg, #0f0c29, #1a1a3e, #24243e) !important;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.05);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
     padding: 12px 0;
 }
@@ -1545,4 +1546,17 @@ footer p {
 
 .quantity-selector input[type="number"]:focus {
     border-color: var(--glow-blue);
+}
+
+.flavor-stock {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    background: rgba(255, 255, 255, 0.05);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: auto;
+}
+
+.flavor-option input[type="radio"]:checked + .flavor-label .flavor-stock {
+    color: var(--glow-blue);
 }

@@ -25,7 +25,7 @@
         <!-- ========== ФОРМА ЗАКАЗА ========== -->
         <div class="order-form">
             <h4>Оформить заказ</h4>
-            <form method="post" action="{% url 'catalog:order_create' product.id %}">
+            <form method="post" action="{% url 'cart:cart_add' product.id %}">
                 {% csrf_token %}
 
                 <!-- Сообщения -->
@@ -71,7 +71,7 @@
                         </div>
                         {% endfor %}
                     </div>
-                    <input type="hidden" name="selected_flavors" id="selected_flavors1" value="">
+                    <input type="hidden" name="selected_flavors" id="selected_flavors" value="">
                     <small class="text-muted">Выберите вкус или цвет ниже</small>
                 </div>
                 {% endif %}
@@ -100,7 +100,7 @@
                         </div>
                         {% endfor %}
                     </div>
-                    <input type="hidden" name="selected_colors" id="selected_colors1" value="">
+                    <input type="hidden" name="selected_colors" id="selected_colors" value="">
                     <small class="text-muted">Выберите цвет или вкус выше</small>
                 </div>
                 {% endif %}
@@ -115,8 +115,6 @@
                         <button type="button" class="qty-btn plus" onclick="changeSimpleQuantity(1)">+</button>
                     </div>
                     <small class="text-muted">Доступно: {{ product.quantity }} шт.</small>
-                    <input type="hidden" name="selected_flavors" id="selected_flavors" value="">
-                    <input type="hidden" name="selected_colors" id="selected_colors" value="">
                 </div>
                 {% endif %}
 
@@ -128,33 +126,15 @@
                 </div>
                 {% endif %}
 
-                <!-- Поле Telegram -->
-                <div class="mb-3 telegram-input-wrapper">
-                    <label for="id_telegram" class="form-label">
-                        <i class="fab fa-telegram-plane" style="color: var(--glow-blue);"></i>
-                        Ваш Telegram-ник <span style="color: #ff4444;">*</span>
-                    </label>
-                    <div class="input-group">
-                        <span class="input-group-text">@</span>
-                        <input type="text" class="form-control" id="id_telegram" name="telegram"
-                               placeholder="ваш_никнейм" required>
-                    </div>
-                    <small class="text-muted">Введите ваш Telegram-ник без @</small>
+                <!-- Кнопки -->
+                <div class="d-grid gap-2">
+                    <button type="submit" name="action" value="cart" class="btn btn-primary">
+                        <i class="fas fa-shopping-cart"></i> В корзину
+                    </button>
+                    <button type="submit" name="action" value="order" class="btn btn-success">
+                        <i class="fas fa-check-circle"></i> Купить сейчас
+                    </button>
                 </div>
-
-                <!-- Поле комментария -->
-                <div class="mb-3">
-                    <label for="id_comment" class="form-label">
-                        <i class="fas fa-comment" style="color: var(--glow-blue);"></i>
-                        Комментарий
-                    </label>
-                    <textarea class="form-control" id="id_comment" name="comment" rows="3"
-                              placeholder="Пожелания к заказу..."></textarea>
-                </div>
-
-                <button type="submit" class="btn btn-success w-100">
-                    <i class="fas fa-check-circle"></i> Заказать
-                </button>
             </form>
         </div>
         {% else %}
@@ -246,7 +226,7 @@
     /* ========== ОБЩИЕ СТИЛИ ДЛЯ ВКУСОВ И ЦВЕТОВ ========== */
     .flavors-grid, .colors-grid {
         display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
         gap: 8px;
         margin-top: 8px;
     }
@@ -481,7 +461,7 @@
     /* ========== АДАПТАЦИЯ ДЛЯ МОБИЛЬНЫХ ========== */
     @media (max-width: 576px) {
         .flavors-grid, .colors-grid {
-            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
             gap: 6px;
         }
 
@@ -507,38 +487,50 @@ function changeQuantity(btn, delta, inputClass) {
     updateSelections();
 }
 
-// ========== ОБЩАЯ ФУНКЦИЯ ДЛЯ СБОРА ВЫБРАННЫХ ЭЛЕМЕНТОВ ==========
-function getSelectedItems(containerClass, inputClass, hiddenInputId) {
-    const items = document.querySelectorAll(containerClass);
+// ========== ОБНОВЛЕНИЕ ВЫБРАННЫХ ВКУСОВ ==========
+function updateSelectedFlavors() {
+    const items = document.querySelectorAll('.flavor-option');
     const selected = [];
     items.forEach(function(el) {
         const checkbox = el.querySelector('input[type="checkbox"]');
         if (checkbox && checkbox.checked) {
-            const qtyInput = el.querySelector(inputClass);
-            const name = checkbox.value;
+            const qtyInput = el.querySelector('.flavor-qty-input');
+            const flavor = checkbox.value;
             const quantity = qtyInput ? qtyInput.value : 1;
-            selected.push(name + ':' + quantity);
+            selected.push(flavor + ':' + quantity);
         }
     });
-    const hiddenInput = document.getElementById(hiddenInputId);
+    const hiddenInput = document.getElementById('selected_flavors');
     if (hiddenInput) {
         hiddenInput.value = selected.join(',');
     }
     return selected;
 }
 
-// ========== ОБНОВЛЕНИЕ ВЫБРАННЫХ ЗНАЧЕНИЙ ==========
+// ========== ОБНОВЛЕНИЕ ВЫБРАННЫХ ЦВЕТОВ ==========
+function updateSelectedColors() {
+    const items = document.querySelectorAll('.color-option');
+    const selected = [];
+    items.forEach(function(el) {
+        const checkbox = el.querySelector('input[type="checkbox"]');
+        if (checkbox && checkbox.checked) {
+            const qtyInput = el.querySelector('.color-qty-input');
+            const color = checkbox.value;
+            const quantity = qtyInput ? qtyInput.value : 1;
+            selected.push(color + ':' + quantity);
+        }
+    });
+    const hiddenInput = document.getElementById('selected_colors');
+    if (hiddenInput) {
+        hiddenInput.value = selected.join(',');
+    }
+    return selected;
+}
+
+// ========== ОБНОВЛЕНИЕ ВСЕХ ВЫБРАННЫХ ЗНАЧЕНИЙ ==========
 function updateSelections() {
     updateSelectedFlavors();
     updateSelectedColors();
-}
-
-function updateSelectedFlavors() {
-    return getSelectedItems('.flavor-option', '.flavor-qty-input', 'selected_flavors');
-}
-
-function updateSelectedColors() {
-    return getSelectedItems('.color-option', '.color-qty-input', 'selected_colors');
 }
 
 // ========== ФУНКЦИИ ДЛЯ КНОПОК КОЛИЧЕСТВА ==========

@@ -6,7 +6,7 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-for-dev')
-DEBUG = os.getenv('DEBUG', 'False') == 'True'
+DEBUG = True
 
 ALLOWED_HOSTS = ['*']
 
@@ -20,6 +20,7 @@ INSTALLED_APPS = [
     'catalog',
     'django_filters',
 'dashboard',
+    'cart',
 ]
 
 MIDDLEWARE = [
@@ -46,6 +47,7 @@ TEMPLATES = [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
                 'django.contrib.messages.context_processors.messages',
+                'cart.context_processors.cart',
             ],
         },
     },

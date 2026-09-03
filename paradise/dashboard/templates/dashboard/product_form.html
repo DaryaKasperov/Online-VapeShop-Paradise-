@@ -41,6 +41,15 @@
                     <small class="text-muted d-block mt-1">Для товаров без вкусов и цветов</small>
                 </div>
 
+                 <!-- ========== В НАЛИЧИИ (чекбокс) ========== -->
+                <div class="mb-3 form-check form-switch">
+                    {{ form.in_stock }}
+                    <label class="form-check-label" for="{{ form.in_stock.id_for_label }}">
+                        <i class="fas "></i> В наличии
+                    </label>
+                    <small class="d-block text-muted">Отметьте, если товар доступен для заказа</small>
+                </div>
+
                 <!-- Изображение -->
                 <div class="mb-3">
                     <label class="form-label">Изображение</label>

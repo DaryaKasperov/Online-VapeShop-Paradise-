@@ -7,45 +7,52 @@ from .forms import ReviewForm, OrderForm
 import requests
 import os
 
+# catalog/views.py
+from django.shortcuts import render, get_object_or_404
+from .models import Category, Product
+
 
 def product_list(request, category_slug=None):
     """Главная страница и список товаров с фильтрацией"""
     categories = Category.objects.all()
 
-    # Получаем все товары, которые есть в наличии
-    products = Product.objects.filter(in_stock=True)
+    # ✅ Получаем ВСЕ товары (не только in_stock=True)
+    products = Product.objects.all()
 
-    # Фильтруем товары: оставляем только те, у которых есть что-то в наличии
+    # ✅ Оставляем только те, у которых есть наличие (через has_stock)
     filtered_products = []
     for product in products:
-        if product.has_stock():
+        if product.has_stock():  # Проверяет вкусы, цвета и quantity
             filtered_products.append(product.id)
 
     products = products.filter(id__in=filtered_products)
 
+    # Фильтр по категории
     category = None
     if category_slug:
         category = get_object_or_404(Category, slug=category_slug)
         products = products.filter(category=category)
 
+    # Фильтр по категории из GET
     category_id = request.GET.get('category')
     if category_id and not category:
         try:
-            category = get_object_or_404(Category, id=category_id)
-        except:
+            category = Category.objects.get(id=category_id)
+            products = products.filter(category=category)
+        except Category.DoesNotExist:
             pass
 
-    filter = ProductFilter(request.GET, queryset=products)
-    products = filter.qs
+    # Поиск
+    search = request.GET.get('search')
+    if search:
+        products = products.filter(name__icontains=search)
 
     context = {
         'categories': categories,
         'category': category,
-        'filter': filter,
         'products': products,
     }
     return render(request, 'catalog/index.html', context)
-
 
 def product_detail(request, slug):
     """Страница одного товара с отзывами, вкусами и цветами"""
@@ -89,11 +96,8 @@ def product_detail(request, slug):
             'has_simple_quantity': has_simple_quantity,
             'reviews': reviews,
             'review_form': form,
-            'order_form': OrderForm(),
         }
         return render(request, 'catalog/product_detail.html', context)
-    except Http404:
-        raise
     except Exception as e:
         import traceback
         error_text = traceback.format_exc()

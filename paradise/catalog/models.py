@@ -52,10 +52,10 @@ class Category(models.Model):
 # ========== ТОВАР ==========
 class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE,
-                                 related_name='products', verbose_name='Категория')
+                                 related_name='product', verbose_name='Категория')
     name = models.CharField('Название', max_length=200)
     slug = models.SlugField(unique=True, blank=True)
-    image = models.ImageField('Изображение', upload_to='products/', blank=True, null=True)
+    image = models.ImageField('Изображение', upload_to='product/', blank=True, null=True)
     price = models.DecimalField('Цена', max_digits=10, decimal_places=2)
     in_stock = models.BooleanField('В наличии', default=True)
     quantity = models.PositiveIntegerField('Количество на складе', default=0)
@@ -76,6 +76,7 @@ class Product(models.Model):
             while Product.objects.filter(slug=self.slug).exclude(id=self.id).exists():
                 self.slug = f"{self.transliterate(self.name)}-{counter}"
                 counter += 1
+
         super().save(*args, **kwargs)
 
     def transliterate(self, text):
@@ -101,11 +102,14 @@ class Product(models.Model):
         return result
 
     def has_stock(self):
-        """Проверяет, есть ли у товара хоть что-то в наличии"""
-        has_flavor = self.flavor_stocks.filter(quantity__gt=0).exists()
-        has_color = self.color_stocks.filter(quantity__gt=0).exists()
-        has_simple_quantity = self.quantity > 0
-        return has_flavor or has_color or has_simple_quantity
+        """Проверяет, есть ли у товара наличие"""
+        if self.quantity > 0:
+            return True
+        if self.flavor_stocks.filter(quantity__gt=0).exists():
+            return True
+        if self.color_stocks.filter(quantity__gt=0).exists():
+            return True
+        return False
 
     def get_stock_status(self):
         """Возвращает статус наличия для отображения"""

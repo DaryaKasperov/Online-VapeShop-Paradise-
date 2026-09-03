@@ -4,13 +4,14 @@ from .models import Product, Category, Order, Review
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['category', 'name', 'price', 'image', 'quantity']
+        fields = ['category', 'name', 'price', 'image', 'quantity', 'in_stock']
         widgets = {
             'category': forms.Select(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название товара'}),
             'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
               'quantity': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0', 'min': 0}),
+            'in_stock': forms.CheckboxInput(attrs={'class': 'form-check-input'}),  # ✅ Добавлено
         }
         labels = {
             'category': 'Категория',
@@ -18,6 +19,7 @@ class ProductForm(forms.ModelForm):
             'price': 'Цена',
             'image': 'Изображение',
             'quantity': 'Количество на складе',
+            'in_stock': 'В наличии',
         }
 class CategoryForm(forms.ModelForm):
     class Meta:
