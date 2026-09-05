@@ -1,6 +1,7 @@
+# cart/models.py
 from django.db import models
-from django.conf import settings
-from catalog.models import Product, FlavorStock, ColorStock
+from catalog.models import Product
+
 
 class CartItem(models.Model):
     """Модель для товара в корзине"""
@@ -16,7 +17,6 @@ class CartItem(models.Model):
         verbose_name_plural = 'Товары в корзине'
 
     def get_total_price(self):
-        """Общая цена за этот товар"""
         return self.product.price * self.quantity
 
     def __str__(self):

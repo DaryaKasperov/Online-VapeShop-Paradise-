@@ -3,8 +3,376 @@
 
 {% block title %}{{ product.name }}{% endblock %}
 
+{% block extra_css %}
+<style>
+    /* ========== БЛОК ОФОРМЛЕНИЯ ========== */
+    .order-section {
+        background: linear-gradient(135deg, rgba(22, 22, 34, 0.9), rgba(10, 10, 20, 0.95));
+        border: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 2rem;
+        position: relative;
+        overflow: hidden;
+        transition: all 0.4s ease;
+    }
+
+    .order-section:hover {
+        border-color: rgba(79, 195, 247, 0.15);
+        box-shadow: 0 0 40px rgba(79, 195, 247, 0.03);
+    }
+
+    .order-section .section-title {
+        font-size: 1.1rem;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.15em;
+        color: var(--text-primary);
+        margin-bottom: 1.5rem;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .order-section .section-title::after {
+        content: '';
+        flex: 1;
+        height: 1px;
+        background: linear-gradient(90deg, rgba(79, 195, 247, 0.3), transparent);
+    }
+
+    .order-section .section-title i {
+        color: var(--glow-blue);
+        font-size: 1.2rem;
+    }
+
+    /* ========== КАРТОЧКИ ВАРИАНТОВ ========== */
+    .variants-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+        gap: 10px;
+        margin-top: 10px;
+    }
+
+    .variant-card {
+        background: rgba(10, 10, 10, 0.4);
+        border: 2px solid rgba(255, 255, 255, 0.04);
+        padding: 14px 16px;
+        cursor: pointer;
+        transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        position: relative;
+        user-select: none;
+        border-radius: 0;
+        /* ✅ Весь блок кликабельный */
+    }
+
+    .variant-card:hover {
+        border-color: rgba(79, 195, 247, 0.2);
+        background: rgba(10, 10, 10, 0.6);
+        transform: translateY(-2px);
+    }
+
+    .variant-card.selected {
+        border-color: var(--glow-blue);
+        background: rgba(79, 195, 247, 0.06);
+        box-shadow: 0 0 30px rgba(79, 195, 247, 0.04);
+    }
+
+    .variant-card.selected::after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 2px;
+        background: linear-gradient(90deg, var(--glow-blue), transparent);
+    }
+
+    /* ЧЕКБОКС - скрыт */
+    .variant-card input[type="checkbox"] {
+        display: none;
+    }
+
+    .variant-card .variant-top {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        pointer-events: none; /* ✅ Клик проходит сквозь */
+    }
+
+    .variant-card .variant-color {
+        width: 24px;
+        height: 24px;
+        border-radius: 50%;
+        border: 2px solid rgba(255, 255, 255, 0.08);
+        flex-shrink: 0;
+        transition: all 0.3s ease;
+        pointer-events: none;
+    }
+
+    .variant-card.selected .variant-color {
+        border-color: var(--glow-blue);
+        box-shadow: 0 0 20px rgba(79, 195, 247, 0.15);
+    }
+
+    .variant-card .variant-name {
+        flex: 1;
+        font-weight: 500;
+        color: var(--text-primary);
+        font-size: 0.85rem;
+        letter-spacing: -0.01em;
+        pointer-events: none;
+    }
+
+    .variant-card .variant-stock {
+        font-size: 0.65rem;
+        color: var(--text-muted);
+        background: rgba(255, 255, 255, 0.04);
+        padding: 2px 10px;
+        border-radius: 10px;
+        white-space: nowrap;
+        pointer-events: none;
+    }
+
+    .variant-card .variant-check {
+        opacity: 0;
+        transform: scale(0.5);
+        transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        color: var(--glow-blue);
+        font-size: 0.9rem;
+        margin-left: auto;
+        pointer-events: none;
+    }
+
+    .variant-card.selected .variant-check {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    /* ===== КОЛИЧЕСТВО ===== */
+    .variant-card .variant-quantity {
+        display: flex;
+        align-items: center;
+        gap: 4px;
+        margin-top: 8px;
+        padding-top: 8px;
+        border-top: 1px solid rgba(255, 255, 255, 0.04);
+        opacity: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: all 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        pointer-events: none;
+    }
+
+    .variant-card.selected .variant-quantity {
+        opacity: 1;
+        max-height: 50px;
+        pointer-events: auto; /* ✅ Кнопки количества кликабельны */
+    }
+
+    .variant-card .variant-quantity .qty-btn {
+        background: rgba(255, 255, 255, 0.04);
+        border: none;
+        color: var(--text-secondary);
+        width: 28px;
+        height: 28px;
+        font-size: 0.9rem;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        border-radius: 0;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .variant-card .variant-quantity .qty-btn:hover {
+        background: rgba(79, 195, 247, 0.12);
+        color: var(--glow-blue);
+    }
+
+    .variant-card .variant-qty-input {
+        background: transparent;
+        border: none;
+        color: var(--text-primary);
+        width: 36px;
+        height: 28px;
+        text-align: center;
+        font-size: 0.9rem;
+        font-weight: 600;
+        outline: none;
+        -moz-appearance: textfield;
+        pointer-events: auto;
+    }
+
+    .variant-card .variant-qty-input::-webkit-outer-spin-button,
+    .variant-card .variant-qty-input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+
+    /* ========== ВЫБРАННЫЕ ВАРИАНТЫ ========== */
+    .selected-summary {
+        background: rgba(10, 10, 10, 0.4);
+        border: 1px solid rgba(255, 255, 255, 0.04);
+        padding: 12px 16px;
+        margin-top: 12px;
+        display: none;
+    }
+
+    .selected-summary.active {
+        display: block;
+        animation: fadeInUp 0.3s ease forwards;
+    }
+
+    @keyframes fadeInUp {
+        0% {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    .selected-summary .summary-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        color: var(--text-muted);
+        margin-bottom: 6px;
+    }
+
+    .selected-summary .summary-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .selected-summary .summary-tag {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        background: rgba(79, 195, 247, 0.08);
+        border: 1px solid rgba(79, 195, 247, 0.1);
+        padding: 4px 10px 4px 8px;
+        font-size: 0.75rem;
+        color: var(--text-primary);
+    }
+
+    .selected-summary .summary-tag .tag-color {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        flex-shrink: 0;
+    }
+
+    .selected-summary .summary-tag .tag-remove {
+        background: none;
+        border: none;
+        color: var(--text-muted);
+        cursor: pointer;
+        padding: 0 2px;
+        font-size: 0.7rem;
+        transition: color 0.3s ease;
+    }
+
+    .selected-summary .summary-tag .tag-remove:hover {
+        color: #ff4444;
+    }
+
+    /* ========== КНОПКИ ========== */
+    .order-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 12px;
+        margin-top: 1.5rem;
+    }
+
+    .order-actions .btn {
+        padding: 14px 20px;
+        font-weight: 600;
+        font-size: 0.85rem;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        border-radius: 0;
+        transition: all 0.35s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .order-actions .btn-cart {
+        background: rgba(255, 255, 255, 0.04);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        color: var(--text-primary);
+    }
+
+    .order-actions .btn-cart:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.15);
+        transform: translateY(-2px);
+    }
+
+    .order-actions .btn-buy {
+        background: linear-gradient(135deg, #4fc3f7, #0288d1);
+        border: none;
+        color: #0a0a0a;
+    }
+
+    .order-actions .btn-buy:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 30px rgba(79, 195, 247, 0.2);
+    }
+
+    /* ========== АНИМАЦИЯ ========== */
+    .variant-card {
+        opacity: 0;
+        transform: translateY(12px);
+        animation: variantFadeIn 0.4s ease forwards;
+    }
+
+    .variant-card:nth-child(1) { animation-delay: 0.03s; }
+    .variant-card:nth-child(2) { animation-delay: 0.06s; }
+    .variant-card:nth-child(3) { animation-delay: 0.09s; }
+    .variant-card:nth-child(4) { animation-delay: 0.12s; }
+    .variant-card:nth-child(5) { animation-delay: 0.15s; }
+    .variant-card:nth-child(6) { animation-delay: 0.18s; }
+    .variant-card:nth-child(7) { animation-delay: 0.21s; }
+    .variant-card:nth-child(8) { animation-delay: 0.24s; }
+    .variant-card:nth-child(9) { animation-delay: 0.27s; }
+    .variant-card:nth-child(10) { animation-delay: 0.30s; }
+
+    @keyframes variantFadeIn {
+        0% {
+            opacity: 0;
+            transform: translateY(12px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    /* ========== АДАПТИВНОСТЬ ========== */
+    @media (max-width: 768px) {
+        .order-section { padding: 1.25rem; }
+        .variants-grid { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; }
+        .variant-card { padding: 10px 12px; }
+        .variant-card .variant-name { font-size: 0.78rem; }
+        .order-actions { grid-template-columns: 1fr 1fr; gap: 8px; }
+        .order-actions .btn { padding: 12px 14px; font-size: 0.75rem; }
+    }
+
+    @media (max-width: 480px) {
+        .variants-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
+        .variant-card .variant-stock { display: none; }
+        .order-actions { grid-template-columns: 1fr; }
+    }
+</style>
+{% endblock %}
+
 {% block content %}
 <div class="row">
+    <!-- ========== ИЗОБРАЖЕНИЕ ========== -->
     <div class="col-lg-6 mb-4">
         {% if product.image %}
         <img src="{{ product.image.url }}" class="product-detail-image" alt="{{ product.name }}">
@@ -14,21 +382,23 @@
         </div>
         {% endif %}
     </div>
+
+    <!-- ========== ИНФОРМАЦИЯ О ТОВАРЕ ========== -->
     <div class="col-lg-6">
         <h1 class="product-detail-title">{{ product.name }}</h1>
         <p class="text-muted">{{ product.category.name }}</p>
+
         <div class="product-detail-price mb-4">{{ product.price }} BYN</div>
 
         {% if product.in_stock %}
         <div class="alert alert-success">В наличии</div>
 
-        <!-- ========== ФОРМА ЗАКАЗА ========== -->
-        <div class="order-form">
-            <h4>Оформить заказ</h4>
-            <form method="post" action="{% url 'cart:cart_add' product.id %}">
+        <!-- ========== БЛОК ОФОРМЛЕНИЯ ========== -->
+        <div class="order-section">
+
+            <form method="post" action="{% url 'cart:cart_add' product.id %}" id="orderForm">
                 {% csrf_token %}
 
-                <!-- Сообщения -->
                 {% if messages %}
                     <div class="messages-container">
                         {% for message in messages %}
@@ -47,92 +417,98 @@
                     </div>
                 {% endif %}
 
-                <!-- Выбор вкуса -->
-                {% if has_flavors %}
+                <!-- ========== ВЫБОР ВКУСОВ/ЦВЕТОВ ========== -->
+                {% if has_flavors or has_colors %}
                 <div class="mb-3">
-                    <label class="form-label">Выберите вкусы</label>
-                    <div class="flavors-grid">
-                        {% for flavor_item in flavors %}
-                        <div class="flavor-option" data-flavor="{{ flavor_item.flavor }}" data-max="{{ flavor_item.quantity }}">
-                            <input type="checkbox" name="flavors[]" id="flavor_{{ forloop.counter }}"
-                                   value="{{ flavor_item.flavor }}">
-                            <label for="flavor_{{ forloop.counter }}" class="flavor-label">
-                                <span class="flavor-icon">🍭</span>
-                                <span class="flavor-name">{{ flavor_item.flavor }}</span>
-                                <span class="flavor-stock">В наличии: {{ flavor_item.quantity }}</span>
-                                <span class="flavor-check"><i class="fas fa-check"></i></span>
-                            </label>
-                            <div class="flavor-quantity">
-                                <button type="button" class="qty-btn minus" onclick="changeFlavorQuantity(this, -1)">−</button>
-                                <input type="number" name="flavor_quantity_{{ flavor_item.flavor }}"
-                                       class="flavor-qty-input" value="1" min="1" max="{{ flavor_item.quantity }}">
-                                <button type="button" class="qty-btn plus" onclick="changeFlavorQuantity(this, 1)">+</button>
+                    <label class="form-label" style="color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.7rem; display: flex; align-items: center; gap: 10px;">
+                        <span style="display: inline-block; width: 4px; height: 20px; background: var(--glow-blue);"></span>
+                        {% if has_flavors and has_colors %}
+                            Выберите несколько вкусов или цветов<br>  В наличии:
+                        {% elif has_flavors %}
+                            Выберите вкус<br>  В наличии:
+                        {% else %}
+                            Выберите цвет<br>  В наличии:
+                        {% endif %}
+                    </label>
+
+                    <div class="variants-grid" id="variantsGrid">
+                        {% if has_flavors %}
+                            {% for flavor_item in flavors %}
+                            <div class="variant-card" data-variant="{{ flavor_item.flavor }}" data-type="flavor" data-max="{{ flavor_item.quantity }}">
+                                <input type="checkbox" name="selected_variants" id="variant_{{ flavor_item.flavor|slugify }}"
+                                       value="{{ flavor_item.flavor }}" data-type="flavor">
+                                <label for="variant_{{ flavor_item.flavor|slugify }}" style="display: contents; cursor: pointer;">
+                                    <div class="variant-top">
+                                        <span class="variant-color" style="background: {{ flavor_item.color_code|default:'#4fc3f7' }};"></span>
+                                        <span class="variant-name">{{ flavor_item.flavor }}</span>
+                                        <span class="variant-stock">{{ flavor_item.quantity }} шт.</span>
+<!--                                        <span class="variant-check"><i class="fas fa-check"></i></span>-->
+                                    </div>
+                                    <div class="variant-quantity">
+                                        <button type="button" class="qty-btn minus" onclick="changeVariantQuantity(this, -1)">−</button>
+                                        <input type="number" name="variant_quantity_{{ flavor_item.flavor|slugify }}"
+                                               class="variant-qty-input" value="1" min="1" max="{{ flavor_item.quantity }}">
+                                        <button type="button" class="qty-btn plus" onclick="changeVariantQuantity(this, 1)">+</button>
+                                    </div>
+                                </label>
                             </div>
-                        </div>
-                        {% endfor %}
+                            {% endfor %}
+                        {% endif %}
+
+                        {% if has_colors %}
+                            {% for color_item in colors %}
+                            <div class="variant-card" data-variant="{{ color_item.color }}" data-type="color" data-max="{{ color_item.quantity }}">
+                                <input type="checkbox" name="selected_variants" id="variant_{{ color_item.color|slugify }}"
+                                       value="{{ color_item.color }}" data-type="color">
+                                <label for="variant_{{ color_item.color|slugify }}" style="display: contents; cursor: pointer;">
+                                    <div class="variant-top">
+                                        <span class="variant-color" style="background: {{ color_item.color_code|default:'#cccccc' }};"></span>
+                                        <span class="variant-name">{{ color_item.color }}</span>
+                                        <span class="variant-stock">{{ color_item.quantity }} шт.</span>
+                                        <span class="variant-check"><i class="fas fa-check"></i></span>
+                                    </div>
+                                    <div class="variant-quantity">
+                                        <button type="button" class="qty-btn minus" onclick="changeVariantQuantity(this, -1)">−</button>
+                                        <input type="number" name="variant_quantity_{{ color_item.color|slugify }}"
+                                               class="variant-qty-input" value="1" min="1" max="{{ color_item.quantity }}">
+                                        <button type="button" class="qty-btn plus" onclick="changeVariantQuantity(this, 1)">+</button>
+                                    </div>
+                                </label>
+                            </div>
+                            {% endfor %}
+                        {% endif %}
                     </div>
+
                     <input type="hidden" name="selected_flavors" id="selected_flavors" value="">
-                    <small class="text-muted">Выберите вкус или цвет ниже</small>
-                </div>
-                {% endif %}
-
-                <!-- Выбор цвета -->
-                {% if has_colors %}
-                <div class="mb-3">
-                    <label class="form-label">Выберите цвета</label>
-                    <div class="colors-grid">
-                        {% for color_item in colors %}
-                        <div class="color-option" data-color="{{ color_item.color }}" data-max="{{ color_item.quantity }}">
-                            <input type="checkbox" name="colors[]" id="color_{{ forloop.counter }}"
-                                   value="{{ color_item.color }}">
-                            <label for="color_{{ forloop.counter }}" class="color-label">
-                                <span class="color-icon">🎨</span>
-                                <span class="color-name">{{ color_item.color }}</span>
-                                <span class="color-stock">В наличии: {{ color_item.quantity }}</span>
-                                <span class="color-check"><i class="fas fa-check"></i></span>
-                            </label>
-                            <div class="color-quantity">
-                                <button type="button" class="qty-btn minus" onclick="changeColorQuantity(this, -1)">−</button>
-                                <input type="number" name="color_quantity_{{ color_item.color }}"
-                                       class="color-qty-input" value="1" min="1" max="{{ color_item.quantity }}">
-                                <button type="button" class="qty-btn plus" onclick="changeColorQuantity(this, 1)">+</button>
-                            </div>
-                        </div>
-                        {% endfor %}
-                    </div>
                     <input type="hidden" name="selected_colors" id="selected_colors" value="">
-                    <small class="text-muted">Выберите цвет или вкус выше</small>
+
+                    <div class="selected-summary" id="selectedSummary">
+                        <div class="summary-title">Вы выбрали:</div>
+                        <div class="summary-items" id="summaryItems"></div>
+                    </div>
                 </div>
                 {% endif %}
 
-                <!-- Простое количество (для товаров без вкусов и цветов) -->
+                <!-- ========== ПРОСТОЕ КОЛИЧЕСТВО ========== -->
                 {% if not has_flavors and not has_colors and has_simple_quantity %}
                 <div class="mb-3">
-                    <label class="form-label">Количество</label>
+                    <label class="form-label" style="color: var(--text-secondary); font-weight: 600; text-transform: uppercase; letter-spacing: 0.08em; font-size: 0.7rem;">Количество</label>
                     <div class="quantity-selector">
-                        <button type="button" class="qty-btn minus" onclick="changeSimpleQuantity(-1)">−</button>
-                        <input type="number" id="simple_quantity" name="quantity" value="1" min="1" max="{{ product.quantity }}">
-                        <button type="button" class="qty-btn plus" onclick="changeSimpleQuantity(1)">+</button>
-                    </div>
+    <button type="button" class="qty-btn minus" onclick="changeSimpleQuantity(-1)">−</button>
+    <input type="number" id="simple_quantity" name="quantity" value="1" min="1" max="{{ product.quantity }}">
+    <button type="button" class="qty-btn plus" onclick="changeSimpleQuantity(1)">+</button>
+</div>
                     <small class="text-muted">Доступно: {{ product.quantity }} шт.</small>
                 </div>
                 {% endif %}
 
-                <!-- Если нет ничего в наличии -->
-                {% if not has_flavors and not has_colors and not has_simple_quantity %}
-                <div class="alert alert-warning">
-                    <i class="fas fa-exclamation-triangle"></i>
-                    Товар временно недоступен
-                </div>
-                {% endif %}
-
-                <!-- Кнопки -->
-                <div class="d-grid gap-2">
-                    <button type="submit" name="action" value="cart" class="btn btn-primary">
+                <!-- ========== КНОПКИ ========== -->
+                <div class="order-actions">
+                    <button type="submit" name="action" value="cart" class="btn btn-cart">
                         <i class="fas fa-shopping-cart"></i> В корзину
                     </button>
-                    <button type="submit" name="action" value="order" class="btn btn-success">
-                        <i class="fas fa-check-circle"></i> Купить сейчас
+                    <button type="submit" name="action" value="order" class="btn btn-buy">
+                        <i class="fas fa-bolt"></i> Купить сейчас
                     </button>
                 </div>
             </form>
@@ -152,49 +528,53 @@
         <div class="reviews-list mb-4">
             {% for review in reviews %}
             <div class="review-item">
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="review-header">
                     <div>
-                        <strong>{{ review.name }}</strong>
+                        <span class="review-name">{{ review.name }}</span>
                         {% if review.telegram %}
-                        <a href="https://t.me/{{ review.telegram }}" target="_blank" style="color: var(--glow-blue); margin-left: 0.5rem;">
+                        <a href="https://t.me/{{ review.telegram }}" target="_blank" class="review-telegram">
                             <i class="fab fa-telegram-plane"></i> @{{ review.telegram }}
                         </a>
                         {% endif %}
                     </div>
-                    <div>
+                    <div class="review-stars">
                         {% for i in "12345"|make_list %}
                             {% if forloop.counter <= review.rating %}
-                            <span style="color: #f1c40f;">★</span>
+                                <i class="fas fa-star"></i>
                             {% else %}
-                            <span style="color: #444;">★</span>
+                                <i class="far fa-star empty"></i>
                             {% endif %}
                         {% endfor %}
                     </div>
                 </div>
-                <p class="mt-2" style="color: var(--text-secondary);">{{ review.text }}</p>
-                <small class="text-muted">{{ review.created_at|date:"d.m.Y" }}</small>
+                <p class="review-text">{{ review.text }}</p>
+                <span class="review-date">{{ review.created_at|date:"d.m.Y" }}</span>
             </div>
             {% endfor %}
         </div>
         {% else %}
-        <p class="text-muted">Пока нет отзывов. Будьте первым!</p>
+        <div class="no-reviews">
+            <i class="fas fa-comment-slash"></i>
+            <h4>Пока нет отзывов</h4>
+            <p>Будьте первым, кто оставит отзыв!</p>
+        </div>
         {% endif %}
 
         <!-- ========== ФОРМА ОТЗЫВА ========== -->
         <div class="review-form-container">
             <h4><i class="fas fa-pen"></i> Оставить отзыв</h4>
-            <form method="post" action="">
+            <form method="post" action="{% url 'catalog:add_review' product.slug %}">
                 {% csrf_token %}
                 <div class="row">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label class="form-label"><i class="fas fa-user" style="color: var(--glow-blue);"></i> {{ review_form.name.label }}</label>
+                            <label class="form-label"><i class="fas fa-user" style="color: var(--glow-blue);"></i> Ваше имя</label>
                             {{ review_form.name }}
                         </div>
                     </div>
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label class="form-label"><i class="fab fa-telegram-plane" style="color: var(--glow-blue);"></i> {{ review_form.telegram.label }}</label>
+                            <label class="form-label"><i class="fab fa-telegram-plane" style="color: var(--glow-blue);"></i> Telegram</label>
                             <div class="input-group">
                                 <span class="input-group-text">@</span>
                                 {{ review_form.telegram }}
@@ -205,13 +585,13 @@
                 <div class="row">
                     <div class="col-md-4">
                         <div class="mb-3">
-                            <label class="form-label"><i class="fas fa-star" style="color: var(--glow-blue);"></i> {{ review_form.rating.label }}</label>
+                            <label class="form-label"><i class="fas fa-star" style="color: var(--glow-blue);"></i> Оценка</label>
                             {{ review_form.rating }}
                         </div>
                     </div>
                 </div>
                 <div class="mb-3">
-                    <label class="form-label"><i class="fas fa-comment" style="color: var(--glow-blue);"></i> {{ review_form.text.label }}</label>
+                    <label class="form-label"><i class="fas fa-comment" style="color: var(--glow-blue);"></i> Ваш отзыв</label>
                     {{ review_form.text }}
                 </div>
                 <button type="submit" class="btn btn-primary">
@@ -222,382 +602,162 @@
     </div>
 </div>
 
-<style>
-    /* ========== ОБЩИЕ СТИЛИ ДЛЯ ВКУСОВ И ЦВЕТОВ ========== */
-    .flavors-grid, .colors-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        gap: 8px;
-        margin-top: 8px;
-    }
-
-    .flavor-option, .color-option {
-        background: rgba(10, 10, 10, 0.3);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 8px;
-        padding: 10px 12px;
-        transition: all 0.3s ease;
-    }
-
-    .flavor-option:hover, .color-option:hover {
-        border-color: rgba(79, 195, 247, 0.3);
-    }
-
-    .flavor-option input[type="checkbox"],
-    .color-option input[type="checkbox"] {
-        display: none;
-    }
-
-    .flavor-option input[type="checkbox"]:checked + .flavor-label,
-    .color-option input[type="checkbox"]:checked + .color-label {
-        border-color: var(--glow-blue);
-        background: rgba(79, 195, 247, 0.08);
-        color: var(--text-primary);
-    }
-
-    .flavor-option input[type="checkbox"]:checked + .flavor-label .flavor-check,
-    .color-option input[type="checkbox"]:checked + .color-label .color-check {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    .flavor-label, .color-label {
-        display: flex;
-        align-items: center;
-        gap: 8px;
-        padding: 10px 14px;
-        background: rgba(10, 10, 10, 0.4);
-        border: 2px solid rgba(255, 255, 255, 0.06);
-        color: var(--text-secondary);
-        cursor: pointer;
-        transition: all 0.3s ease;
-        font-size: 0.85rem;
-        user-select: none;
-        border-radius: 4px;
-    }
-
-    .flavor-label:hover, .color-label:hover {
-        border-color: rgba(79, 195, 247, 0.3);
-        background: rgba(10, 10, 10, 0.6);
-        transform: translateY(-2px);
-    }
-
-    .flavor-icon, .color-icon {
-        font-size: 1.2rem;
-        flex-shrink: 0;
-    }
-
-    .flavor-name, .color-name {
-        flex: 1;
-        font-weight: 500;
-    }
-
-    .flavor-stock, .color-stock {
-        font-size: 0.7rem;
-        color: var(--text-muted);
-        background: rgba(255, 255, 255, 0.05);
-        padding: 2px 8px;
-        border-radius: 10px;
-        margin-left: auto;
-    }
-
-    .flavor-check, .color-check {
-        opacity: 0;
-        transform: scale(0.5);
-        transition: all 0.3s ease;
-        color: var(--glow-blue);
-        font-size: 0.8rem;
-    }
-
-    .flavor-option input[type="checkbox"]:checked + .flavor-label .flavor-stock,
-    .color-option input[type="checkbox"]:checked + .color-label .color-stock {
-        color: var(--glow-blue);
-    }
-
-    /* ========== ОБЩИЕ СТИЛИ ДЛЯ КНОПОК КОЛИЧЕСТВА ========== */
-    .flavor-quantity, .color-quantity {
-        display: flex;
-        align-items: center;
-        gap: 4px;
-        margin-top: 6px;
-        justify-content: center;
-    }
-
-    .flavor-quantity .qty-btn,
-    .color-quantity .qty-btn {
-        background: rgba(10, 10, 10, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        color: var(--text-primary);
-        width: 28px;
-        height: 28px;
-        font-size: 1rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        border-radius: 4px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .flavor-quantity .qty-btn:hover,
-    .color-quantity .qty-btn:hover {
-        background: rgba(79, 195, 247, 0.15);
-        color: var(--glow-blue);
-    }
-
-    .flavor-qty-input, .color-qty-input {
-        background: rgba(10, 10, 10, 0.4);
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        color: var(--text-primary);
-        width: 40px;
-        height: 28px;
-        text-align: center;
-        font-size: 0.9rem;
-        font-weight: 600;
-        outline: none;
-        border-radius: 4px;
-        -moz-appearance: textfield;
-    }
-
-    .flavor-qty-input::-webkit-outer-spin-button,
-    .flavor-qty-input::-webkit-inner-spin-button,
-    .color-qty-input::-webkit-outer-spin-button,
-    .color-qty-input::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-
-    /* ========== ВЫБОР КОЛИЧЕСТВА ========== */
-    .quantity-selector {
-        display: flex;
-        align-items: center;
-        gap: 0;
-        max-width: 150px;
-        border: 1px solid rgba(255, 255, 255, 0.06);
-        border-radius: 4px;
-    }
-
-    .quantity-selector .qty-btn {
-        background: rgba(10, 10, 10, 0.4);
-        border: none;
-        color: var(--text-primary);
-        width: 36px;
-        height: 40px;
-        font-size: 1.2rem;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    .quantity-selector .qty-btn:hover {
-        background: rgba(79, 195, 247, 0.15);
-        color: var(--glow-blue);
-    }
-
-    .quantity-selector input[type="number"] {
-        background: rgba(10, 10, 10, 0.4);
-        border: none;
-        border-left: 1px solid rgba(255, 255, 255, 0.06);
-        border-right: 1px solid rgba(255, 255, 255, 0.06);
-        color: var(--text-primary);
-        width: 60px;
-        height: 40px;
-        text-align: center;
-        font-size: 1rem;
-        font-weight: 600;
-        outline: none;
-        -moz-appearance: textfield;
-    }
-
-    .quantity-selector input[type="number"]::-webkit-outer-spin-button,
-    .quantity-selector input[type="number"]::-webkit-inner-spin-button {
-        -webkit-appearance: none;
-        margin: 0;
-    }
-
-    /* ========== СООБЩЕНИЕ ОБ ОШИБКЕ ========== */
-    .error-message {
-        background: rgba(255, 68, 68, 0.1);
-        border: 2px solid #ff4444;
-        border-radius: 8px;
-        padding: 12px 16px;
-        margin-bottom: 15px;
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        animation: errorPulse 0.8s ease 3;
-    }
-
-    .error-message .error-icon {
-        font-size: 1.5rem;
-        flex-shrink: 0;
-    }
-
-    .error-message .error-text {
-        color: #ff4444;
-        font-size: 1rem;
-        font-weight: 500;
-    }
-
-    @keyframes errorPulse {
-        0%, 100% {
-            transform: scale(1);
-            box-shadow: 0 0 40px rgba(255, 68, 68, 0.1);
-        }
-        50% {
-            transform: scale(1.01);
-            box-shadow: 0 0 60px rgba(255, 68, 68, 0.2);
-        }
-    }
-
-    .form-control.error {
-        border-color: #ff4444 !important;
-        box-shadow: 0 0 20px rgba(255, 68, 68, 0.1) !important;
-        border-width: 2px !important;
-    }
-
-    /* ========== АДАПТАЦИЯ ДЛЯ МОБИЛЬНЫХ ========== */
-    @media (max-width: 576px) {
-        .flavors-grid, .colors-grid {
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 6px;
-        }
-
-        .flavor-option .flavor-label,
-        .color-option .color-label {
-            padding: 8px 10px;
-            font-size: 0.75rem;
-        }
-    }
-</style>
-
-{% block extra_js %}
+<!-- ========== JAVASCRIPT ========== -->
 <script>
-// ========== ОБЩАЯ ФУНКЦИЯ ДЛЯ ИЗМЕНЕНИЯ КОЛИЧЕСТВА ==========
-function changeQuantity(btn, delta, inputClass) {
-    const container = btn.closest('.flavor-quantity, .color-quantity');
-    const input = container.querySelector(inputClass);
-    const max = parseInt(input.max) || 999;
-    let newValue = parseInt(input.value) + delta;
-    if (newValue < 1) newValue = 1;
-    if (newValue > max) newValue = max;
-    input.value = newValue;
-    updateSelections();
-}
-
-// ========== ОБНОВЛЕНИЕ ВЫБРАННЫХ ВКУСОВ ==========
-function updateSelectedFlavors() {
-    const items = document.querySelectorAll('.flavor-option');
-    const selected = [];
-    items.forEach(function(el) {
-        const checkbox = el.querySelector('input[type="checkbox"]');
-        if (checkbox && checkbox.checked) {
-            const qtyInput = el.querySelector('.flavor-qty-input');
-            const flavor = checkbox.value;
-            const quantity = qtyInput ? qtyInput.value : 1;
-            selected.push(flavor + ':' + quantity);
-        }
-    });
-    const hiddenInput = document.getElementById('selected_flavors');
-    if (hiddenInput) {
-        hiddenInput.value = selected.join(',');
-    }
-    return selected;
-}
-
-// ========== ОБНОВЛЕНИЕ ВЫБРАННЫХ ЦВЕТОВ ==========
-function updateSelectedColors() {
-    const items = document.querySelectorAll('.color-option');
-    const selected = [];
-    items.forEach(function(el) {
-        const checkbox = el.querySelector('input[type="checkbox"]');
-        if (checkbox && checkbox.checked) {
-            const qtyInput = el.querySelector('.color-qty-input');
-            const color = checkbox.value;
-            const quantity = qtyInput ? qtyInput.value : 1;
-            selected.push(color + ':' + quantity);
-        }
-    });
-    const hiddenInput = document.getElementById('selected_colors');
-    if (hiddenInput) {
-        hiddenInput.value = selected.join(',');
-    }
-    return selected;
-}
-
-// ========== ОБНОВЛЕНИЕ ВСЕХ ВЫБРАННЫХ ЗНАЧЕНИЙ ==========
-function updateSelections() {
-    updateSelectedFlavors();
-    updateSelectedColors();
-}
-
-// ========== ФУНКЦИИ ДЛЯ КНОПОК КОЛИЧЕСТВА ==========
-function changeFlavorQuantity(btn, delta) {
-    changeQuantity(btn, delta, '.flavor-qty-input');
-}
-
-function changeColorQuantity(btn, delta) {
-    changeQuantity(btn, delta, '.color-qty-input');
-}
-
-// ========== ПРОСТОЕ КОЛИЧЕСТВО ==========
-function changeSimpleQuantity(delta) {
-    const input = document.getElementById('simple_quantity');
-    if (!input) return;
-    const max = parseInt(input.max) || 999;
-    let newValue = parseInt(input.value) + delta;
-    if (newValue < 1) newValue = 1;
-    if (newValue > max) newValue = max;
-    input.value = newValue;
-}
-
-// ========== ИНИЦИАЛИЗАЦИЯ ==========
 document.addEventListener('DOMContentLoaded', function() {
-    // Вкусы
-    const flavorCheckboxes = document.querySelectorAll('.flavor-option input[type="checkbox"]');
-    flavorCheckboxes.forEach(function(cb) {
-        cb.addEventListener('change', updateSelections);
-    });
-    document.querySelectorAll('.flavor-qty-input').forEach(function(input) {
-        input.addEventListener('input', updateSelections);
-    });
+    // ========== КЛИК ПО КАРТОЧКЕ (ВЕСЬ БЛОК) ==========
+    const variantCards = document.querySelectorAll('.variant-card');
+    const summaryItems = document.getElementById('summaryItems');
+    const selectedSummary = document.getElementById('selectedSummary');
+    const selectedCount = document.getElementById('selectedCount');
+    const selectedFlavorsInput = document.getElementById('selected_flavors');
+    const selectedColorsInput = document.getElementById('selected_colors');
 
-    // Цвета
-    const colorCheckboxes = document.querySelectorAll('.color-option input[type="checkbox"]');
-    colorCheckboxes.forEach(function(cb) {
-        cb.addEventListener('change', updateSelections);
-    });
-    document.querySelectorAll('.color-qty-input').forEach(function(input) {
-        input.addEventListener('input', updateSelections);
-    });
+    // ===== ОБНОВЛЕНИЕ ИТОГА =====
+    function updateSummary() {
+        const selected = document.querySelectorAll('.variant-card.selected');
+        const count = selected.length;
 
-    // Инициализация
-    updateSelections();
+        if (selectedCount) {
+            selectedCount.textContent = `(выбрано: ${count})`;
+        }
 
-    // ========== ВАЛИДАЦИЯ TELEGRAM ==========
-    var telegramInput = document.getElementById('id_telegram');
-    var errorContainer = document.querySelector('.field-error');
-
-    if (telegramInput && errorContainer) {
-        telegramInput.addEventListener('input', function() {
-            errorContainer.style.display = 'none';
-            this.classList.remove('error');
-        });
-
-        telegramInput.addEventListener('blur', function() {
-            var value = this.value.replace(/^@/, '');
-            var pattern = /^(?!.*__)[a-zA-Z][a-zA-Z0-9_]{4,31}(?<!_)$/;
-
-            if (value.length > 0 && !pattern.test(value)) {
-                this.classList.add('error');
+        if (selectedSummary) {
+            if (count > 0) {
+                selectedSummary.classList.add('active');
             } else {
-                this.classList.remove('error');
+                selectedSummary.classList.remove('active');
+            }
+        }
+
+        if (summaryItems) {
+            summaryItems.innerHTML = '';
+            selected.forEach(function(card) {
+                const name = card.querySelector('.variant-name')?.textContent || '';
+                const color = card.querySelector('.variant-color')?.style?.background || '#ccc';
+                const qtyInput = card.querySelector('.variant-qty-input');
+                const quantity = qtyInput ? qtyInput.value : 1;
+
+                const tag = document.createElement('span');
+                tag.className = 'summary-tag';
+                tag.innerHTML = `
+                    <span class="tag-color" style="background: ${color};"></span>
+                    ${name} × ${quantity}
+                    <button type="button" class="tag-remove" onclick="removeVariant(this)">✕</button>
+                `;
+                summaryItems.appendChild(tag);
+            });
+        }
+
+        updateHiddenFields();
+    }
+
+    // ===== КЛИК ПО КАРТОЧКЕ =====
+    variantCards.forEach(function(card) {
+        card.addEventListener('click', function(e) {
+            // Игнорируем клики по кнопкам количества и инпутам
+            if (e.target.closest('.qty-btn') || e.target.closest('.variant-qty-input')) {
+                return;
+            }
+
+            // ✅ Переключаем класс selected (весь блок)
+            this.classList.toggle('selected');
+
+            // Обновляем чекбокс
+            const checkbox = this.querySelector('input[type="checkbox"]');
+            if (checkbox) {
+                checkbox.checked = this.classList.contains('selected');
+            }
+
+            updateSummary();
+        });
+    });
+
+    // ===== ИЗМЕНЕНИЕ КОЛИЧЕСТВА =====
+    window.changeVariantQuantity = function(btn, delta) {
+        const card = btn.closest('.variant-card');
+        const input = card.querySelector('.variant-qty-input');
+        const max = parseInt(input.max) || 999;
+        let newValue = parseInt(input.value) + delta;
+        if (newValue < 1) newValue = 1;
+        if (newValue > max) newValue = max;
+        input.value = newValue;
+        updateSummary();
+    };
+
+    // ===== УДАЛЕНИЕ ИЗ ИТОГА =====
+    window.removeVariant = function(btn) {
+        const tag = btn.closest('.summary-tag');
+        const fullText = tag.textContent.replace('✕', '').trim();
+        // Извлекаем имя (убираем × количество)
+        const name = fullText.replace(/×\d+$/, '').trim();
+
+        variantCards.forEach(function(card) {
+            const cardName = card.querySelector('.variant-name')?.textContent?.trim() || '';
+            if (cardName === name) {
+                card.classList.remove('selected');
+                const checkbox = card.querySelector('input[type="checkbox"]');
+                if (checkbox) checkbox.checked = false;
             }
         });
+
+        updateSummary();
+    };
+
+    // ===== ОБНОВЛЕНИЕ СКРЫТЫХ ПОЛЕЙ =====
+    function updateHiddenFields() {
+        const selected = document.querySelectorAll('.variant-card.selected');
+        let flavors = [];
+        let colors = [];
+
+        selected.forEach(function(card) {
+            const checkbox = card.querySelector('input[type="checkbox"]');
+            const qtyInput = card.querySelector('.variant-qty-input');
+            const name = checkbox ? checkbox.value : '';
+            const quantity = qtyInput ? qtyInput.value : 1;
+            const type = checkbox ? checkbox.dataset.type : 'flavor';
+
+            if (name) {
+                const value = name + ':' + quantity;
+                if (type === 'flavor') {
+                    flavors.push(value);
+                } else if (type === 'color') {
+                    colors.push(value);
+                }
+            }
+        });
+
+        if (selectedFlavorsInput) {
+            selectedFlavorsInput.value = flavors.join(',');
+        }
+        if (selectedColorsInput) {
+            selectedColorsInput.value = colors.join(',');
+        }
     }
+
+    // ===== ПРОСТОЕ КОЛИЧЕСТВО =====
+    window.changeSimpleQuantity = function(delta) {
+        const input = document.getElementById('simple_quantity');
+        if (!input) return;
+        let val = parseInt(input.value) + delta;
+        const max = parseInt(input.max) || 999;
+        if (val < 1) val = 1;
+        if (val > max) val = max;
+        input.value = val;
+    };
+
+    // ===== ВАЛИДАЦИЯ =====
+    document.getElementById('orderForm').addEventListener('submit', function(e) {
+        const hasVariants = {{ has_flavors|yesno:"true,false" }} || {{ has_colors|yesno:"true,false" }};
+        if (hasVariants) {
+            const selected = document.querySelectorAll('.variant-card.selected');
+            if (selected.length === 0) {
+                e.preventDefault();
+                alert('Пожалуйста, выберите хотя бы один товар');
+                return false;
+            }
+        }
+    });
 });
 </script>
-{% endblock %}
 {% endblock %}

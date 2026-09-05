@@ -2,7 +2,7 @@ from django.db import models
 from django.urls import reverse
 import re
 
-# ========== КАТЕГОРИЯ ==========
+
 class Category(models.Model):
     name = models.CharField('Название', max_length=100)
     slug = models.SlugField(unique=True, blank=True)
@@ -42,6 +42,8 @@ class Category(models.Model):
         result = re.sub(r'^-+|-+$', '', result)
         return result
 
+    pass
+
     def __str__(self):
         return self.name
 
@@ -49,10 +51,8 @@ class Category(models.Model):
         return reverse('catalog:category', args=[self.slug])
 
 
-# ========== ТОВАР ==========
 class Product(models.Model):
-    category = models.ForeignKey(Category, on_delete=models.CASCADE,
-                                 related_name='product', verbose_name='Категория')
+    category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='product', verbose_name='Категория')
     name = models.CharField('Название', max_length=200)
     slug = models.SlugField(unique=True, blank=True)
     image = models.ImageField('Изображение', upload_to='product/', blank=True, null=True)
@@ -76,7 +76,6 @@ class Product(models.Model):
             while Product.objects.filter(slug=self.slug).exclude(id=self.id).exists():
                 self.slug = f"{self.transliterate(self.name)}-{counter}"
                 counter += 1
-
         super().save(*args, **kwargs)
 
     def transliterate(self, text):
@@ -173,13 +172,21 @@ class ColorStock(models.Model):
 
 
 # ========== ЗАКАЗ ==========
+
 class Order(models.Model):
-    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='Товар')
-    flavor = models.CharField('Выбранный вкус', max_length=100, blank=True)
-    color = models.CharField('Выбранный цвет', max_length=100, blank=True)
-    quantity = models.PositiveIntegerField('Количество', default=1)
+    """Модель заказа"""
+    STATUS_CHOICES = [
+        ('pending', 'В обработке'),
+        ('confirmed', 'Подтвержден'),
+        ('shipped', 'Отправлен'),
+        ('delivered', 'Доставлен'),
+        ('cancelled', 'Отменен'),
+    ]
+
     telegram = models.CharField('Telegram', max_length=100)
     comment = models.TextField('Комментарий', blank=True)
+    status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='pending')
+    total_price = models.DecimalField('Итого', max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField('Дата заказа', auto_now_add=True)
 
     class Meta:
@@ -188,9 +195,24 @@ class Order(models.Model):
         ordering = ['-created_at']
 
     def __str__(self):
-        return f'Заказ от @{self.telegram} на {self.product.name}'
+        return f'Заказ #{self.id} от @{self.telegram}'
 
 
+class OrderItem(models.Model):
+    """Модель позиции в заказе"""
+    order = models.ForeignKey(Order, on_delete=models.CASCADE, related_name='items', verbose_name='Заказ')
+    product = models.ForeignKey(Product, on_delete=models.CASCADE, verbose_name='Товар')
+    flavor = models.CharField('Вкус', max_length=100, blank=True)
+    color = models.CharField('Цвет', max_length=100, blank=True)
+    quantity = models.PositiveIntegerField('Количество', default=1)
+    price = models.DecimalField('Цена', max_digits=10, decimal_places=2)
+
+    class Meta:
+        verbose_name = 'Позиция заказа'
+        verbose_name_plural = 'Позиции заказа'
+
+    def __str__(self):
+        return f'{self.product.name} x {self.quantity}'
 # ========== ОТЗЫВ ==========
 class Review(models.Model):
     product = models.ForeignKey(Product, on_delete=models.CASCADE,

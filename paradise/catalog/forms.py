@@ -1,17 +1,18 @@
+# catalog/forms.py
 from django import forms
 from .models import Product, Category, Order, Review
+
 
 class ProductForm(forms.ModelForm):
     class Meta:
         model = Product
-        fields = ['category', 'name', 'price', 'image', 'quantity', 'in_stock']
+        fields = ['category', 'name', 'price', 'image', 'quantity']
         widgets = {
             'category': forms.Select(attrs={'class': 'form-control'}),
             'name': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Название товара'}),
             'price': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00'}),
             'image': forms.FileInput(attrs={'class': 'form-control'}),
-              'quantity': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0', 'min': 0}),
-            'in_stock': forms.CheckboxInput(attrs={'class': 'form-check-input'}),  # ✅ Добавлено
+            'quantity': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0', 'min': 0}),
         }
         labels = {
             'category': 'Категория',
@@ -19,8 +20,9 @@ class ProductForm(forms.ModelForm):
             'price': 'Цена',
             'image': 'Изображение',
             'quantity': 'Количество на складе',
-            'in_stock': 'В наличии',
         }
+
+
 class CategoryForm(forms.ModelForm):
     class Meta:
         model = Category
@@ -45,24 +47,17 @@ class CategoryForm(forms.ModelForm):
 
 
 class OrderForm(forms.ModelForm):
+    """Форма для заказа (только Telegram и комментарий)"""
+
     class Meta:
         model = Order
-        fields = ['telegram', 'flavor', 'color', 'comment']
+        # ✅ ТОЛЬКО поля, которые есть в модели Order
+        fields = ['telegram', 'comment']
         widgets = {
             'telegram': forms.TextInput(attrs={
                 'class': 'form-control',
                 'placeholder': 'ваш_никнейм',
                 'required': True,
-            }),
-            'flavor': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Выберите вкус из списка',
-                'readonly': True,
-            }),
-            'color': forms.TextInput(attrs={
-                'class': 'form-control',
-                'placeholder': 'Выберите цвет из списка',
-                'readonly': True,
             }),
             'comment': forms.Textarea(attrs={
                 'class': 'form-control',
@@ -72,8 +67,6 @@ class OrderForm(forms.ModelForm):
         }
         labels = {
             'telegram': 'Ваш Telegram-ник',
-            'flavor': 'Выбранный вкус',
-            'color': 'Выбранный цвет',
             'comment': 'Комментарий',
         }
 
