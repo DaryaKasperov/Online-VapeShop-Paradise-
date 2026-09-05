@@ -276,6 +276,10 @@
            href="{% url 'dashboard:orders' %}">
             <i class="fas fa-shopping-cart"></i>Заказы
         </a>
+        <a class="nav-link {% if 'blocked' in request.resolver_match.url_name %}active{% endif %}"
+   href="{% url 'dashboard:blocked_users' %}">
+    <i class="fas fa-ban"></i> Блокировка
+</a>
     </div>
 </div>
 

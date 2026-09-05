@@ -3,7 +3,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
 from django.http import HttpResponse
-from catalog.models import Product, Category, Order, FlavorStock, ColorStock
+from catalog.models import Product, Category, Order, FlavorStock, ColorStock, BlockedUser
 from catalog.forms import ProductForm, CategoryForm
 
 
@@ -263,3 +263,72 @@ def category_delete(request, category_id):
         'category': category,
         'action': 'delete'
     })
+
+
+@login_required(login_url='dashboard:login')
+@user_passes_test(is_admin, login_url='dashboard:login')
+def blocked_users_list(request):
+    """Список заблокированных пользователей"""
+    blocked_users = BlockedUser.objects.all().order_by('-blocked_at')
+    return render(request, 'dashboard/blocked_users.html', {
+        'blocked_users': blocked_users,
+        'title': 'Блокировка пользователей'
+    })
+
+
+@login_required(login_url='dashboard:login')
+@user_passes_test(is_admin, login_url='dashboard:login')
+def blocked_user_create(request):
+    """Блокировка пользователя"""
+    if request.method == 'POST':
+        telegram = request.POST.get('telegram', '').strip()
+        reason = request.POST.get('reason', '').strip()
+
+        if telegram:
+            # Удаляем @ если есть
+            telegram = telegram.lstrip('@')
+
+            # Проверяем, не заблокирован ли уже
+            if BlockedUser.objects.filter(telegram=telegram, is_active=True).exists():
+                messages.warning(request, f'Пользователь @{telegram} уже заблокирован')
+            else:
+                # Если был заблокирован ранее, но разблокирован - активируем
+                blocked, created = BlockedUser.objects.get_or_create(
+                    telegram=telegram,
+                    defaults={'reason': reason, 'is_active': True}
+                )
+                if not created:
+                    blocked.is_active = True
+                    blocked.reason = reason
+                    blocked.save()
+                messages.success(request, f'Пользователь @{telegram} заблокирован')
+        else:
+            messages.error(request, 'Введите Telegram-ник')
+
+        return redirect('dashboard:blocked_users')
+
+    return render(request, 'dashboard/blocked_user_form.html', {
+        'title': 'Блокировать пользователя'
+    })
+
+
+@login_required(login_url='dashboard:login')
+@user_passes_test(is_admin, login_url='dashboard:login')
+def blocked_user_unblock(request, user_id):
+    """Разблокировка пользователя"""
+    blocked = get_object_or_404(BlockedUser, id=user_id)
+    blocked.is_active = False
+    blocked.save()
+    messages.success(request, f'Пользователь @{blocked.telegram} разблокирован')
+    return redirect('dashboard:blocked_users')
+
+
+@login_required(login_url='dashboard:login')
+@user_passes_test(is_admin, login_url='dashboard:login')
+def blocked_user_delete(request, user_id):
+    """Удаление записи о блокировке"""
+    blocked = get_object_or_404(BlockedUser, id=user_id)
+    telegram = blocked.telegram
+    blocked.delete()
+    messages.success(request, f'Запись о блокировке @{telegram} удалена')
+    return redirect('dashboard:blocked_users')

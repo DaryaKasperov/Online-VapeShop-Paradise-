@@ -233,3 +233,20 @@ class Review(models.Model):
 
     def __str__(self):
         return f'{self.name} - {self.product.name}'
+
+
+    # Блокировкка пользователя
+class BlockedUser(models.Model):
+    """Модель для заблокированных пользователей по Telegram"""
+    telegram = models.CharField('Telegram-ник', max_length=100, unique=True)
+    reason = models.TextField('Причина блокировки', blank=True)
+    blocked_at = models.DateTimeField('Дата блокировки', auto_now_add=True)
+    is_active = models.BooleanField('Активна', default=True)  # можно временно отключить
+
+    class Meta:
+        verbose_name = 'Заблокированный пользователь'
+        verbose_name_plural = 'Заблокированные пользователи'
+        ordering = ['-blocked_at']
+
+    def __str__(self):
+        return f'@{self.telegram} - заблокирован {self.blocked_at.strftime("%d.%m.%Y")}'

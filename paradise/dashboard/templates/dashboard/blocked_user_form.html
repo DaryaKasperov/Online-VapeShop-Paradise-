@@ -1,0 +1,50 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Блокировать пользователя{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1><i class="fas fa-ban"></i> {{ title }}</h1>
+    <a href="{% url 'dashboard:blocked_users' %}" class="btn btn-outline-light">
+        <i class="fas fa-arrow-left"></i> Назад
+    </a>
+</div>
+
+<div class="row">
+    <div class="col-md-6">
+        <div class="stat-card">
+            <form method="post">
+                {% csrf_token %}
+                
+                <div class="mb-3">
+                    <label class="form-label">Telegram-ник <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <span class="input-group-text">@</span>
+                        <input type="text" name="telegram" class="form-control" 
+                               placeholder="ваш_никнейм" required>
+                    </div>
+                    <small class="text-muted">Введите Telegram-ник пользователя без @</small>
+                </div>
+                
+                <div class="mb-3">
+                    <label class="form-label">Причина блокировки</label>
+                    <textarea name="reason" class="form-control" rows="3" 
+                              placeholder="Укажите причину блокировки..."></textarea>
+                </div>
+                
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Заблокированный пользователь не сможет оформлять заказы
+                </div>
+                
+                <button type="submit" class="btn btn-danger">
+                    <i class="fas fa-ban"></i> Заблокировать
+                </button>
+                <a href="{% url 'dashboard:blocked_users' %}" class="btn btn-outline-light">
+                    Отмена
+                </a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

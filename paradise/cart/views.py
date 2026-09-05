@@ -2,12 +2,11 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db import transaction
-from django.apps import apps
 import os
 import requests
 
 # ✅ Импорты из catalog
-from catalog.models import Product, FlavorStock, ColorStock, Order, OrderItem
+from catalog.models import Product, FlavorStock, ColorStock, Order, OrderItem, BlockedUser
 
 # ✅ Импорт из текущего приложения
 from .models import CartItem
@@ -215,8 +214,16 @@ def send_telegram_notification(order):
         return False
 
 
+def is_user_blocked(telegram):
+    """Проверка, заблокирован ли пользователь"""
+    if not telegram:
+        return False
+    return BlockedUser.objects.filter(telegram=telegram, is_active=True).exists()
+
+
+# ✅ ОДНА ФУНКЦИЯ cart_checkout (не две!)
 def cart_checkout(request):
-    """Оформление заказа из корзины (ОДИН заказ)"""
+    """Оформление заказа из корзины с проверкой блокировки"""
     session_key = request.session.session_key
     if not session_key:
         return redirect('cart:cart_view')
@@ -233,6 +240,11 @@ def cart_checkout(request):
 
         if not telegram:
             messages.error(request, 'Пожалуйста, введите ваш Telegram-ник')
+            return redirect('cart:cart_view')
+
+        # ✅ ПРОВЕРКА БЛОКИРОВКИ
+        if is_user_blocked(telegram):
+            messages.error(request, f'❌ Пользователь @{telegram} заблокирован. Обратитесь к администратору.')
             return redirect('cart:cart_view')
 
         try:
@@ -294,7 +306,7 @@ def cart_checkout(request):
 
                 send_telegram_notification(order)
 
-                messages.success(request, f' Заказ оформлен! Мы свяжемся с вами в телеграмм.')
+                messages.success(request, ' Заказ оформлен! Мы свяжемся с вами в Telegram.')
                 return redirect('catalog:product_list')
 
         except Exception as e:

@@ -1,7 +1,6 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Category, Product, Order, OrderItem, Review, FlavorStock, ColorStock
-
+from .models import Category, Product, Order, OrderItem, Review, FlavorStock, ColorStock, BlockedUser
 
 class FlavorStockInline(admin.TabularInline):
     model = FlavorStock
@@ -112,3 +111,27 @@ class ColorStockAdmin(admin.ModelAdmin):
     list_display = ['product', 'color', 'quantity']
     list_filter = ['product__category']
     search_fields = ['color', 'product__name']
+
+    @admin.register(BlockedUser)
+    class BlockedUserAdmin(admin.ModelAdmin):
+        list_display = ['telegram', 'reason', 'blocked_at', 'is_active']
+        list_filter = ['is_active', 'blocked_at']
+        search_fields = ['telegram', 'reason']
+        list_editable = ['is_active']
+        readonly_fields = ['blocked_at']
+
+        fields = ['telegram', 'reason', 'is_active', 'blocked_at']
+
+        actions = ['block_users', 'unblock_users']
+
+        def block_users(self, request, queryset):
+            updated = queryset.update(is_active=True)
+            self.message_user(request, f'{updated} пользователей заблокировано')
+
+        block_users.short_description = 'Заблокировать выбранных'
+
+        def unblock_users(self, request, queryset):
+            updated = queryset.update(is_active=False)
+            self.message_user(request, f'{updated} пользователей разблокировано')
+
+        unblock_users.short_description = 'Разблокировать выбранных'

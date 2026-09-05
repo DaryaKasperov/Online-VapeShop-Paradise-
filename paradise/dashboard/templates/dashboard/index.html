@@ -41,8 +41,14 @@
                 <a href="{% url 'dashboard:products' %}" class="btn btn-outline-light">
                     <i class="fas fa-list"></i> Управление товарами
                 </a>
+                <a href="{% url 'dashboard:category_create' %}" class="btn btn-outline-light">
+                    <i class="fas fa-bookmark"></i> Управление категориями
+                </a>
                 <a href="{% url 'dashboard:orders' %}" class="btn btn-outline-light">
                     <i class="fas fa-shopping-cart"></i> Просмотр заказов
+                </a>
+                <a href="{% url 'dashboard:blocked_users' %}" class="btn btn-outline-light">
+                    <i class="fas fa-ban"></i> Заблокированные пользователи
                 </a>
             </div>
         </div>

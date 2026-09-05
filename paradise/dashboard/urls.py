@@ -26,4 +26,10 @@ urlpatterns = [
 
     # Заказы
     path('orders/', views.orders_list, name='orders'),
+
+    # Блокировка пользователей
+    path('blocked/', views.blocked_users_list, name='blocked_users'),
+    path('blocked/create/', views.blocked_user_create, name='blocked_user_create'),
+    path('blocked/unblock/<int:user_id>/', views.blocked_user_unblock, name='blocked_user_unblock'),
+    path('blocked/delete/<int:user_id>/', views.blocked_user_delete, name='blocked_user_delete'),
 ]
