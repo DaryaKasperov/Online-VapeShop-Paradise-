@@ -227,8 +227,6 @@
 <body>
     <!-- Навигация -->
 
-
-
     <nav class="navbar navbar-expand-lg">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'dashboard:index' %}">
@@ -246,49 +244,31 @@
         </div>
     </nav>
 
-    <!-- Боковое меню -->
-    <div class="sidebar">
-        <div class="nav flex-column">
-            <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}"
-               href="{% url 'dashboard:index' %}">
-                <i class="fas fa-home"></i>Главная
-            </a>
-            <a class="nav-link {% if 'product' in request.resolver_match.url_name %}active{% endif %}"
-               href="{% url 'dashboard:products' %}">
-                <i class="fas fa-box"></i>Товары
-            </a>
-
-            <div class="sidebar">
+   <!-- ========== БОКОВОЕ МЕНЮ ========== -->
+<div class="sidebar">
     <div class="nav flex-column">
         <a class="nav-link {% if request.resolver_match.url_name == 'index' %}active{% endif %}"
            href="{% url 'dashboard:index' %}">
-            <i class="fas fa-home"></i>Главная
+            <i class="fas fa-home"></i> Главная
         </a>
         <a class="nav-link {% if 'product' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'dashboard:products' %}">
-            <i class="fas fa-box"></i>Товары
+            <i class="fas fa-box"></i> Товары
         </a>
         <a class="nav-link {% if 'category' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'dashboard:categories' %}">
-            <i class="fas fa-tags"></i>Категории
+            <i class="fas fa-tags"></i> Категории
         </a>
         <a class="nav-link {% if 'order' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'dashboard:orders' %}">
-            <i class="fas fa-shopping-cart"></i>Заказы
+            <i class="fas fa-shopping-cart"></i> Заказы
         </a>
         <a class="nav-link {% if 'blocked' in request.resolver_match.url_name %}active{% endif %}"
-   href="{% url 'dashboard:blocked_users' %}">
-    <i class="fas fa-ban"></i> Блокировка
-</a>
+           href="{% url 'dashboard:blocked_users' %}">
+            <i class="fas fa-ban"></i> Блокировка
+        </a>
     </div>
 </div>
-
-            <a class="nav-link {% if 'order' in request.resolver_match.url_name %}active{% endif %}"
-               href="{% url 'dashboard:orders' %}">
-                <i class="fas fa-shopping-cart"></i>Заказы
-            </a>
-        </div>
-    </div>
 
     <!-- Основной контент -->
     <div class="main-content">

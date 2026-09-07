@@ -2,6 +2,11 @@
 import os
 import sys
 
+from dotenv import load_dotenv
+load_dotenv()
+
+TG_BOT_TOKEN = os.getenv('TG_BOT_TOKEN')
+TG_CHAT_ID = os.getenv('TG_CHAT_ID')
 # ✅ Добавляем путь к корневой папке
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
