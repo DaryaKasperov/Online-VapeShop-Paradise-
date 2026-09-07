@@ -1,14 +1,16 @@
+# D:\Paradise\paradise\settings.py
 import os
-from dotenv import load_dotenv
+import sys
 
-load_dotenv()
-BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+# ✅ Добавляем путь к корневой папке
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key-for-dev')
+sys.path.insert(0, BASE_DIR)
+
+SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-key')
 DEBUG = True
-
-ALLOWED_HOSTS = ['*']
+ALLOWED_HOSTS = ['*', '.vercel.app']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -17,9 +19,9 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
-    'catalog',
+    'catalog',      # ✅ Название приложения
     'django_filters',
-'dashboard',
+    'dashboard',
     'cart',
 ]
 
@@ -35,6 +37,7 @@ MIDDLEWARE = [
 ]
 
 ROOT_URLCONF = 'paradise.urls'
+WSGI_APPLICATION = 'paradise.wsgi.application'
 
 TEMPLATES = [
     {
@@ -49,13 +52,10 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'cart.context_processors.cart',
                 'catalog.context_processors.categories',
-
             ],
         },
     },
 ]
-
-WSGI_APPLICATION = 'paradise.wsgi.application'
 
 DATABASES = {
     'default': {
@@ -64,35 +64,14 @@ DATABASES = {
     }
 }
 
-AUTH_PASSWORD_VALIDATORS = [
-    {
-        'NAME': 'django.contrib.auth.password_validation.UserAttributeSimilarityValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.MinimumLengthValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.CommonPasswordValidator',
-    },
-    {
-        'NAME': 'django.contrib.auth.password_validation.NumericPasswordValidator',
-    },
-]
+STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
 USE_TZ = True
-
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
-STATICFILES_DIRS = [
-    os.path.join(BASE_DIR, 'static'),
-]
-
-STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
-
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
