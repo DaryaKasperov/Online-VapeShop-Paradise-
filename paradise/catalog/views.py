@@ -4,8 +4,7 @@ from django.http import HttpResponse
 from .models import Category, Product, Order, Review, FlavorStock, ColorStock
 from .filters import ProductFilter
 from .forms import ReviewForm, OrderForm
-import requests
-import os
+from django.db.models import Q
 
 # catalog/views.py
 from django.shortcuts import render, get_object_or_404
@@ -16,13 +15,13 @@ def product_list(request, category_slug=None):
     """Главная страница и список товаров с фильтрацией"""
     categories = Category.objects.all()
 
-    # ✅ Получаем ВСЕ товары (не только in_stock=True)
+    # Получаем ВСЕ товары
     products = Product.objects.all()
 
-    # ✅ Оставляем только те, у которых есть наличие (через has_stock)
+    # Фильтруем: оставляем только те, у которых есть наличие
     filtered_products = []
     for product in products:
-        if product.has_stock():  # Проверяет вкусы, цвета и quantity
+        if product.has_stock():
             filtered_products.append(product.id)
 
     products = products.filter(id__in=filtered_products)
@@ -31,6 +30,7 @@ def product_list(request, category_slug=None):
     page_title = 'Все товары'
     category = None
 
+    # Фильтр по категории из URL
     if category_slug:
         category = get_object_or_404(Category, slug=category_slug)
         products = products.filter(category=category)
@@ -42,19 +42,30 @@ def product_list(request, category_slug=None):
         try:
             category = Category.objects.get(id=category_id)
             products = products.filter(category=category)
+            page_title = category.name
         except Category.DoesNotExist:
             pass
 
-    # Поиск
-    search = request.GET.get('search')
+    # ✅ Поиск с использованием Q
+    search = request.GET.get('search', '').strip()
     if search:
-        products = products.filter(name__icontains=search)
+        products = products.filter(
+            Q(name__icontains=search) |
+            Q(description__icontains=search) |
+            Q(category__name__icontains=search)
+        )
+        page_title = f'Результаты поиска: "{search}"'
+
+    # Если есть и категория, и поиск
+    if category and search:
+        page_title = f'{category.name}: "{search}"'
 
     context = {
         'categories': categories,
         'category': category,
         'products': products,
         'page_title': page_title,
+        'search_query': search,
     }
     return render(request, 'catalog/index.html', context)
 

@@ -34,14 +34,12 @@
     <!-- Меню -->
     <nav class="navbar navbar-expand-lg navbar-dark">
         <div class="container">
-             <a class="nav-link" href="{% url 'cart:cart_view' %}" style="position: relative;">
-            <i class="fas fa-shopping-bag"></i>
-            {% if cart_total_items > 0 %}
-            <span class="badge bg-danger" style="position: absolute; top: 1px; right: -18px; font-size: 0.6rem; border-radius: 50%; padding: 2px 6px; min-width: 18px; text-align: center;">
-                {{ cart_total_items }}
-            </span>
-            {% endif %}
-        </a>
+             <a class="nav-link cart-link" href="{% url 'cart:cart_view' %}" aria-label="Корзина">
+    <i class="fas fa-shopping-bag" aria-hidden="true"></i>
+    {% if cart_total_items|default:0 > 0 %}
+        <span class="cart-badge">{{ cart_total_items }}</span>
+    {% endif %}
+</a>
             <a class="navbar-brand" href="{% url 'catalog:product_list' %}">Paradise</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
                 <span class="navbar-toggler-icon"></span>
@@ -113,13 +111,21 @@
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            // Загрузчик
+         document.addEventListener('DOMContentLoaded', function() {
+            // ===== ЗАГРУЗЧИК =====
             const loader = document.getElementById('pageLoader');
             if (loader) {
-                setTimeout(function() {
-                    loader.classList.add('hidden');
-                }, 300);
+                const startTime = Date.now();
+                window.addEventListener('load', function() {
+                    const elapsed = Date.now() - startTime;
+                    const delay = Math.max(0, 500 - elapsed);
+                    setTimeout(function() {
+                        loader.classList.add('hidden');
+                        setTimeout(function() {
+                            loader.remove();
+                        }, 400);
+                    }, delay);
+                });
             }
 
             // Меню при скролле

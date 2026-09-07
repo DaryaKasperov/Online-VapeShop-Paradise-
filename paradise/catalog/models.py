@@ -6,6 +6,7 @@ import re
 class Category(models.Model):
     name = models.CharField('Название', max_length=100)
     slug = models.SlugField(unique=True, blank=True)
+    is_active = models.BooleanField('Активна', default=True)
 
     class Meta:
         verbose_name = 'Категория'
@@ -55,6 +56,7 @@ class Product(models.Model):
     category = models.ForeignKey(Category, on_delete=models.CASCADE, related_name='product', verbose_name='Категория')
     name = models.CharField('Название', max_length=200)
     slug = models.SlugField(unique=True, blank=True)
+    description = models.TextField('Описание', blank=True)
     image = models.ImageField('Изображение', upload_to='product/', blank=True, null=True)
     price = models.DecimalField('Цена', max_digits=10, decimal_places=2)
     in_stock = models.BooleanField('В наличии', default=True)
@@ -77,6 +79,11 @@ class Product(models.Model):
                 self.slug = f"{self.transliterate(self.name)}-{counter}"
                 counter += 1
         super().save(*args, **kwargs)
+
+        def update_stock_status(self):
+            """Обновляет статус наличия после списания"""
+            self.in_stock = self.has_stock()
+            self.save(update_fields=['in_stock'])
 
     def transliterate(self, text):
         map = {

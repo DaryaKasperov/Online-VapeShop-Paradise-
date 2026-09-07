@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
 from django.db import transaction
+from django.db.models import F  # ✅ ДОБАВЬ ЭТУ СТРОКУ!
 import os
 import requests
 
@@ -221,7 +222,7 @@ def is_user_blocked(telegram):
     return BlockedUser.objects.filter(telegram=telegram, is_active=True).exists()
 
 
-# ✅ ОДНА ФУНКЦИЯ cart_checkout (не две!)
+# ✅ ОДНА ФУНКЦИЯ cart_checkout
 def cart_checkout(request):
     """Оформление заказа из корзины с проверкой блокировки"""
     session_key = request.session.session_key
@@ -258,36 +259,48 @@ def cart_checkout(request):
                 total_price = 0
 
                 for item in cart_items:
+                    # ✅ СПИСЫВАЕМ ВКУСЫ
                     if item.flavor:
                         try:
-                            flavor_stock = FlavorStock.objects.get(
+                            flavor_stock = FlavorStock.objects.select_for_update().get(
                                 product=item.product,
                                 flavor=item.flavor
                             )
                             if flavor_stock.quantity < item.quantity:
                                 messages.error(request, f'Вкуса "{item.flavor}" недостаточно ({flavor_stock.quantity} шт.)')
                                 return redirect('cart:cart_view')
-                            flavor_stock.quantity -= item.quantity
-                            flavor_stock.save()
+                            flavor_stock.quantity = F('quantity') - item.quantity
+                            flavor_stock.save(update_fields=['quantity'])
                         except FlavorStock.DoesNotExist:
                             messages.error(request, f'Вкус "{item.flavor}" не найден')
                             return redirect('cart:cart_view')
 
+                    # ✅ СПИСЫВАЕМ ЦВЕТА
                     if item.color:
                         try:
-                            color_stock = ColorStock.objects.get(
+                            color_stock = ColorStock.objects.select_for_update().get(
                                 product=item.product,
                                 color=item.color
                             )
                             if color_stock.quantity < item.quantity:
                                 messages.error(request, f'Цвета "{item.color}" недостаточно ({color_stock.quantity} шт.)')
                                 return redirect('cart:cart_view')
-                            color_stock.quantity -= item.quantity
-                            color_stock.save()
+                            color_stock.quantity = F('quantity') - item.quantity
+                            color_stock.save(update_fields=['quantity'])
                         except ColorStock.DoesNotExist:
                             messages.error(request, f'Цвет "{item.color}" не найден')
                             return redirect('cart:cart_view')
 
+                    # ✅ СПИСЫВАЕМ ПРОСТОЕ КОЛИЧЕСТВО (если нет вкусов/цветов)
+                    if not item.flavor and not item.color:
+                        product = Product.objects.select_for_update().get(id=item.product.id)
+                        if product.quantity < item.quantity:
+                            messages.error(request, f'Товара "{product.name}" недостаточно ({product.quantity} шт.)')
+                            return redirect('cart:cart_view')
+                        product.quantity = F('quantity') - item.quantity
+                        product.save(update_fields=['quantity'])
+
+                    # Создаем позицию заказа
                     item_price = float(item.product.price) * item.quantity
                     OrderItem.objects.create(
                         order=order,
@@ -301,6 +314,12 @@ def cart_checkout(request):
 
                 order.total_price = total_price
                 order.save()
+
+                # ✅ ОБНОВЛЯЕМ СТАТУС НАЛИЧИЯ
+                for item in cart_items:
+                    item.product.refresh_from_db()
+                    item.product.in_stock = item.product.has_stock()
+                    item.product.save(update_fields=['in_stock'])
 
                 cart_items.delete()
 

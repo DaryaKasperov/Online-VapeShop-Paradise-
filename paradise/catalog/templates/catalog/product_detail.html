@@ -86,7 +86,6 @@
         background: linear-gradient(90deg, var(--glow-blue), transparent);
     }
 
-    /* ЧЕКБОКС - скрыт */
     .variant-card input[type="checkbox"] {
         display: none;
     }
@@ -95,7 +94,7 @@
         display: flex;
         align-items: center;
         gap: 10px;
-        pointer-events: none; /* ✅ Клик проходит сквозь */
+        pointer-events: none;
     }
 
     .variant-card .variant-color {
@@ -364,7 +363,6 @@
 
     @media (max-width: 480px) {
         .variants-grid { grid-template-columns: 1fr 1fr; gap: 6px; }
-        .variant-card .variant-stock { display: none; }
         .order-actions { grid-template-columns: 1fr; }
     }
 </style>
@@ -439,11 +437,12 @@
                                        value="{{ flavor_item.flavor }}" data-type="flavor">
                                 <label for="variant_{{ flavor_item.flavor|slugify }}" style="display: contents; cursor: pointer;">
                                     <div class="variant-top">
-                                        <span class="variant-color" style="background: {{ flavor_item.color_code|default:'#4fc3f7' }};"></span>
                                         <span class="variant-name">{{ flavor_item.flavor }}</span>
-                                        <span class="variant-stock">{{ flavor_item.quantity }} шт.</span>
-<!--                                        <span class="variant-check"><i class="fas fa-check"></i></span>-->
+                                            <span class="variant-check"><i class="fas fa-check"></i></span>
                                     </div>
+                                    <div><span class="variant-stock">{{ flavor_item.quantity }} шт.</span>
+                                    </div>
+
                                     <div class="variant-quantity">
                                         <button type="button" class="qty-btn minus" onclick="changeVariantQuantity(this, -1)">−</button>
                                         <input type="number" name="variant_quantity_{{ flavor_item.flavor|slugify }}"
@@ -641,8 +640,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const tag = document.createElement('span');
                 tag.className = 'summary-tag';
                 tag.innerHTML = `
-                    <span class="tag-color" style="background: ${color};"></span>
-                    ${name} × ${quantity}
+                      ${name} × ${quantity}
                     <button type="button" class="tag-remove" onclick="removeVariant(this)">✕</button>
                 `;
                 summaryItems.appendChild(tag);
@@ -653,25 +651,30 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ===== КЛИК ПО КАРТОЧКЕ =====
-    variantCards.forEach(function(card) {
-        card.addEventListener('click', function(e) {
-            // Игнорируем клики по кнопкам количества и инпутам
-            if (e.target.closest('.qty-btn') || e.target.closest('.variant-qty-input')) {
-                return;
-            }
+variantCards.forEach(function(card) {
+    card.addEventListener('click', function(e) {
+        // Игнорируем клики по кнопкам количества и инпутам
+        if (e.target.closest('.qty-btn') || e.target.closest('.variant-qty-input')) {
+            return;
+        }
 
-            // ✅ Переключаем класс selected (весь блок)
-            this.classList.toggle('selected');
+        // ✅ Предотвращаем двойной клик (если клик по label или checkbox)
+        if (e.target.closest('label') || e.target.closest('input[type="checkbox"]')) {
+            return;
+        }
 
-            // Обновляем чекбокс
-            const checkbox = this.querySelector('input[type="checkbox"]');
-            if (checkbox) {
-                checkbox.checked = this.classList.contains('selected');
-            }
+        // ✅ Переключаем класс selected
+        this.classList.toggle('selected');
 
-            updateSummary();
-        });
+        // Обновляем чекбокс
+        const checkbox = this.querySelector('input[type="checkbox"]');
+        if (checkbox) {
+            checkbox.checked = this.classList.contains('selected');
+        }
+
+        updateSummary();
     });
+});
 
     // ===== ИЗМЕНЕНИЕ КОЛИЧЕСТВА =====
     window.changeVariantQuantity = function(btn, delta) {
