@@ -1,5 +1,6 @@
 import os
-import sys  # ✅ ДОБАВЬ ЭТУ СТРОКУ
+import sys
+from django.core.wsgi import get_wsgi_application
 
 # Добавляем путь к корневой папке
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))

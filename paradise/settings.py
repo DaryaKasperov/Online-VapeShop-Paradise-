@@ -1,13 +1,13 @@
 # D:\Paradise\paradise\settings.py
 import os
 import sys
+import dj_database_url
 
 from dotenv import load_dotenv
 load_dotenv()
 
 TG_BOT_TOKEN = os.getenv('TG_BOT_TOKEN')
 TG_CHAT_ID = os.getenv('TG_CHAT_ID')
-# ✅ Добавляем путь к корневой папке
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -63,10 +63,12 @@ TEMPLATES = [
 ]
 
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
-    }
+    'default': dj_database_url.config(
+        default='sqlite:///db.sqlite3',
+        env='PARADISE_DATABASE_URL',  # Используем переменную с префиксом
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
 
 STATIC_URL = '/static/'
