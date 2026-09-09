@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     'django_filters',
     'dashboard',
     'cart',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -76,7 +77,8 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-DEFAULT_FILE_STORAGE = 'vercel_blob.storage.BlobStorage'
+DEFAULT_FILE_STORAGE = 'storages.backends.vercel_blob.VercelBlobStorage'
+AWS_ACCESS_KEY_ID = os.getenv('BLOB_READ_WRITE_TOKEN')
 
 LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Europe/Moscow'
