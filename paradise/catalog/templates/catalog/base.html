@@ -17,9 +17,10 @@
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
 
     <!-- Ваш CSS -->
-    <link rel="stylesheet" href="{% static 'catalog/css/nova-style.css' %}">
 
-    {% block extra_css %}{% endblock %}
+    {% block extra_css %}
+     <link rel="stylesheet" href="{% static 'catalog/css/nova-style.css' %}">
+{% endblock %}
 </head>
 <body>
     <!-- Загрузчик -->
@@ -184,5 +185,5 @@
     </script>
 
     {% block extra_js %}{% endblock %}
-</body>
+    </body>
 </html>
