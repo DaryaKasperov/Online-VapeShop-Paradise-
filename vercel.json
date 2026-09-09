@@ -5,7 +5,7 @@
       "src": "paradise/wsgi.py",
       "use": "@vercel/python",
       "config": {
-        "buildCommand": "./build.sh"
+        "buildCommand": "bash build.sh"
       }
     }
   ],
