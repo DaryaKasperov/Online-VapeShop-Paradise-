@@ -2,7 +2,7 @@
 import os
 import sys
 import dj_database_url
-
+from vercel_blob import BlobStorage
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -75,6 +75,8 @@ STATIC_URL = '/static/'
 STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
+
+DEFAULT_FILE_STORAGE = 'vercel_blob.storage.BlobStorage'
 
 LANGUAGE_CODE = 'ru-ru'
 TIME_ZONE = 'Europe/Moscow'
