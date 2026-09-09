@@ -3,6 +3,8 @@ import os
 import sys
 import dj_database_url
 
+from pathlib import Path
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -64,8 +66,7 @@ TEMPLATES = [
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3',
-        env='PARADISE_DATABASE_URL',  # Используем переменную с префиксом
+        default='sqlite:///db.sqlite3',  # Для локальной разработки
         conn_max_age=600,
         conn_health_checks=True,
     )
