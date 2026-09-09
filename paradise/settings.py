@@ -17,7 +17,7 @@ sys.path.insert(0, BASE_DIR)
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-key')
 DEBUG = True
-ALLOWED_HOSTS = ['*', '.vercel.app']
+ALLOWED_HOSTS = ['*', '.vercel.app', ' https://online-vape-shop-paradise.vercel.app']
 
 INSTALLED_APPS = [
     'django.contrib.admin',
