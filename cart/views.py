@@ -6,12 +6,17 @@ from django.db.models import F  # ✅ ДОБАВЬ ЭТУ СТРОКУ!
 import os
 import requests
 
+from decimal import Decimal
+
+
 # ✅ Импорты из catalog
 from catalog.models import Product, FlavorStock, ColorStock, Order, OrderItem, BlockedUser
 
 # ✅ Импорт из текущего приложения
 from .models import CartItem
 
+from django.views.decorators.http import require_POST
+from catalog.models import PromoCode
 
 def cart_view(request):
     """Страница корзины"""
@@ -210,6 +215,48 @@ def cart_remove(request, item_id):
             })
 
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
+
+@require_POST
+@require_POST
+def apply_promo(request):
+    code = request.POST.get('code', '').strip().upper()
+
+    if not code:
+        return JsonResponse({'success': False, 'error': 'Введите промокод'})
+
+    session_key = request.session.session_key
+    if not session_key:
+        return JsonResponse({'success': False, 'error': 'Корзина пуста'})
+
+    cart_items = CartItem.objects.filter(session_key=session_key)
+    if not cart_items.exists():
+        return JsonResponse({'success': False, 'error': 'Корзина пуста'})
+
+    # ✅ Используем Decimal вместо float
+    total_price = sum(Decimal(str(item.get_total_price())) for item in cart_items)
+
+    try:
+        promo = PromoCode.objects.get(code__iexact=code)
+    except PromoCode.DoesNotExist:
+        return JsonResponse({'success': False, 'error': 'Промокод не найден'})
+
+    is_valid, message = promo.is_valid(total_price)
+    if not is_valid:
+        return JsonResponse({'success': False, 'error': message})
+
+    discount = promo.calculate_discount(total_price)
+    new_total = max(Decimal('0'), total_price - discount)
+
+    request.session['promo_code'] = promo.code
+    request.session['promo_discount'] = str(discount)
+
+    return JsonResponse({
+        'success': True,
+        'message': f'Промокод применён! Скидка: {discount:.2f} BYN',
+        'discount': float(discount),
+        'new_total': float(new_total),
+        'promo_code': promo.code,
+    })
 
 
 def send_telegram_notification(order):

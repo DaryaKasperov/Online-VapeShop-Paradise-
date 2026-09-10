@@ -1,6 +1,7 @@
 from django.contrib import admin
 from django.utils.html import format_html
 from .models import Category, Product, Order, OrderItem, Review, FlavorStock, ColorStock, BlockedUser
+from .models import PromoCode
 
 class FlavorStockInline(admin.TabularInline):
     model = FlavorStock
@@ -98,6 +99,11 @@ class ReviewAdmin(admin.ModelAdmin):
     list_editable = ['is_approved']
     readonly_fields = ['created_at']
 
+@admin.register(PromoCode)
+class PromoCodeAdmin(admin.ModelAdmin):
+    list_display = ('code', 'discount_type', 'discount_value', 'is_active', 'used_count', 'valid_until')
+    list_filter = ('is_active', 'discount_type')
+    search_fields = ('code',)
 
 @admin.register(FlavorStock)
 class FlavorStockAdmin(admin.ModelAdmin):

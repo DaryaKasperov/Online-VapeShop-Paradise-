@@ -2,6 +2,8 @@ from django.db import models
 from django.urls import reverse
 import re
 
+from decimal import Decimal
+
 
 class Category(models.Model):
     name = models.CharField('Название', max_length=100)
@@ -109,8 +111,12 @@ class Product(models.Model):
 
     def has_stock(self):
         """Проверяет, есть ли у товара наличие"""
-        if self.quantity > 0:
-            return True
+        try:
+            if int(self.quantity or 0) > 0:
+                return True
+        except (ValueError, TypeError):
+            pass
+
         if self.flavor_stocks.filter(quantity__gt=0).exists():
             return True
         if self.color_stocks.filter(quantity__gt=0).exists():
@@ -257,3 +263,69 @@ class BlockedUser(models.Model):
 
     def __str__(self):
         return f'@{self.telegram} - заблокирован {self.blocked_at.strftime("%d.%m.%Y")}'
+
+    # catalog/models.py
+
+class PromoCode(models.Model):
+    DISCOUNT_TYPE_CHOICES = [
+        ('percent', 'Процент'),
+        ('fixed', 'Фиксированная сумма'),
+    ]
+
+    code = models.CharField('Код', max_length=50, unique=True)
+    discount_type = models.CharField(
+        'Тип скидки',
+        max_length=10,
+        choices=DISCOUNT_TYPE_CHOICES,
+        default='percent'
+    )
+    discount_value = models.DecimalField('Размер скидки', max_digits=10, decimal_places=2)
+    min_order_amount = models.DecimalField(
+        'Мин. сумма заказа',
+        max_digits=10,
+        decimal_places=2,
+        default=0
+    )
+    valid_from = models.DateTimeField('Действует с', null=True, blank=True)
+    valid_until = models.DateTimeField('Действует до', null=True, blank=True)
+    is_active = models.BooleanField('Активен', default=True)
+    usage_limit = models.PositiveIntegerField('Лимит использований', null=True, blank=True)
+    used_count = models.PositiveIntegerField('Использовано раз', default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = 'Промокод'
+        verbose_name_plural = 'Промокоды'
+
+    def __str__(self):
+        return self.code
+
+    def is_valid(self, order_amount=Decimal('0')):
+        from django.utils import timezone
+        from decimal import Decimal
+        order_amount = Decimal(str(order_amount))
+        now = timezone.now()
+
+        if not self.is_active:
+            return False, 'Промокод неактивен'
+
+        if self.valid_from and now < self.valid_from:
+            return False, 'Промокод ещё не начал действовать'
+
+        if self.valid_until and now > self.valid_until:
+            return False, 'Срок действия промокода истёк'
+
+        if self.usage_limit and self.used_count >= self.usage_limit:
+            return False, 'Лимит использований промокода исчерпан'
+
+        if order_amount < self.min_order_amount:
+            return False, f'Минимальная сумма заказа {self.min_order_amount} BYN'
+
+        return True, 'OK'
+
+    def calculate_discount(self, order_amount):
+        """Возвращает сумму скидки."""
+        order_amount = Decimal(str(order_amount))  # приводим к Decimal
+        if self.discount_type == 'percent':
+            return (order_amount * self.discount_value / Decimal('100')).quantize(Decimal('0.01'))
+        return self.discount_value

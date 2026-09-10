@@ -10,4 +10,6 @@ urlpatterns = [
     path('update/<int:item_id>/', views.cart_update, name='cart_update'),
     path('checkout/', views.cart_checkout, name='cart_checkout'),
     path('clear/', views.cart_clear, name='cart_clear'),
+    path('apply-promo/', views.apply_promo, name='apply_promo'),
+
 ]

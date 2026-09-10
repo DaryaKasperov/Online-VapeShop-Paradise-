@@ -30,7 +30,6 @@
         border-bottom: none;
     }
 
-    /* ----- Первая строка: картинка + название ----- */
     .cart-item-top {
         display: flex;
         align-items: center;
@@ -42,7 +41,6 @@
         height: 80px;
         flex: 0 0 80px;
         border-radius: 12px;
-        object-fit: cover;
         background: rgba(255, 255, 255, 0.05);
         overflow: hidden;
     }
@@ -69,7 +67,6 @@
         line-height: 1.35;
         word-break: normal;
         overflow-wrap: break-word;
-        white-space: normal;
     }
 
     .cart-item-desc {
@@ -77,13 +74,12 @@
         color: var(--text-muted);
     }
 
-    /* ----- Вторая строка: цена + кнопки ----- */
     .cart-item-bottom {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 16px;
-        padding-left: 96px; /* 80px картинка + 16px отступ */
+        padding-left: 96px;
     }
 
     .cart-item-price {
@@ -194,6 +190,46 @@
 
     .promo-section .btn-apply:hover {
         background: rgba(255, 255, 255, 0.1);
+    }
+
+    /* ========== СООБЩЕНИЕ О ПРОМОКОДЕ ========== */
+    .promo-message {
+        display: none;
+        margin-top: 10px;
+        padding: 10px 14px;
+        border-radius: 8px;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        animation: promoSlideDown 0.3s ease forwards;
+    }
+
+    .promo-message.success {
+        display: block;
+        background: rgba(76, 175, 80, 0.1);
+        border: 1px solid rgba(76, 175, 80, 0.3);
+        color: #4caf50;
+    }
+
+    .promo-message.error {
+        display: block;
+        background: rgba(255, 68, 68, 0.1);
+        border: 1px solid rgba(255, 68, 68, 0.3);
+        color: #ff4444;
+    }
+
+    .promo-message .message-icon {
+        margin-right: 8px;
+    }
+
+    @keyframes promoSlideDown {
+        0% {
+            opacity: 0;
+            transform: translateY(-6px);
+        }
+        100% {
+            opacity: 1;
+            transform: translateY(0);
+        }
     }
 
     /* ========== ИТОГ ========== */
@@ -421,8 +457,6 @@
                 <div class="cart-items">
                     {% for item in cart_items %}
                     <div class="cart-item">
-
-                        <!-- Первая строка: картинка + название -->
                         <div class="cart-item-top">
                             <div class="cart-item-image">
                                 {% if item.product.image %}
@@ -446,22 +480,21 @@
                             </div>
                         </div>
 
-                        <!-- Вторая строка: цена + кнопки -->
                         <div class="cart-item-bottom">
                             <div class="cart-item-price">{{ item.product.price }} BYN</div>
 
                             <div class="cart-item-actions">
-                            <button class="qty-btn" onclick="updateQuantity({{ item.id }}, -1)">−</button>
-                            <input type="number" class="qty-input" id="qty_{{ item.id }}"
-                                   value="{{ item.quantity }}" min="1"
-                                   max="{{ item.max_quantity }}"
-                                   data-max="{{ item.max_quantity }}" readonly>
-                            <button class="qty-btn" onclick="updateQuantity({{ item.id }}, 1)">+</button>
-                            <button class="cart-item-remove" onclick="removeItem({{ item.id }})">
-                                <i class="fas fa-times"></i>
-                            </button>
+                                <button class="qty-btn" onclick="updateQuantity({{ item.id }}, -1)">−</button>
+                                <input type="number" class="qty-input" id="qty_{{ item.id }}"
+                                       value="{{ item.quantity }}" min="1"
+                                       max="{{ item.max_quantity|default:item.product.quantity }}"
+                                       data-max="{{ item.max_quantity|default:item.product.quantity }}" readonly>
+                                <button class="qty-btn" onclick="updateQuantity({{ item.id }}, 1)">+</button>
+                                <button class="cart-item-remove" onclick="removeItem({{ item.id }})">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
                         </div>
-
                     </div>
                     {% endfor %}
                 </div>
@@ -471,6 +504,7 @@
                     <input type="text" placeholder="Промокод" id="promoCode">
                     <button class="btn-apply" onclick="applyPromo()">Применить</button>
                 </div>
+                <div id="promoMessage" class="promo-message"></div>
 
                 <!-- Итог -->
                 <div class="cart-summary">
@@ -483,7 +517,7 @@
                         <span class="amount">{{ cart_total_price }} BYN</span>
                     </div>
 
-                    <!-- Telegram для связи -->
+                    <!-- Telegram -->
                     <div class="telegram-field">
                         <label for="telegramInput">
                             <i class="fab fa-telegram-plane" style="color: var(--glow-blue);"></i>
@@ -514,7 +548,6 @@
                 </a>
 
             {% else %}
-                <!-- Пустая корзина -->
                 <div class="cart-empty">
                     <div class="empty-icon">
                         <i class="fas fa-shopping-bag"></i>
@@ -531,20 +564,15 @@
 </div>
 
 <script>
-// ========== ПОКАЗАТЬ ОШИБКУ ==========
+// ========== ОШИБКА TELEGRAM ==========
 function showError(message) {
     var errorDiv = document.getElementById('telegramError');
     if (errorDiv) {
         errorDiv.textContent = message;
         errorDiv.style.display = 'block';
-        errorDiv.style.color = '#ff4444';
-        errorDiv.style.marginTop = '8px';
-        errorDiv.style.fontSize = '0.8rem';
-        errorDiv.style.padding = '8px 0';
     }
 }
 
-// ========== СКРЫТЬ ОШИБКУ ==========
 function hideError() {
     var errorDiv = document.getElementById('telegramError');
     if (errorDiv) {
@@ -591,23 +619,6 @@ function checkout() {
     document.getElementById('checkoutForm').submit();
 }
 
-// ========== СКРЫТИЕ ОШИБКИ ПРИ ВВОДЕ ==========
-document.addEventListener('DOMContentLoaded', function() {
-    var input = document.getElementById('telegramInput');
-
-    if (input) {
-        input.addEventListener('input', function() {
-            hideError();
-            this.classList.remove('error');
-        });
-
-        input.addEventListener('focus', function() {
-            hideError();
-            this.classList.remove('error');
-        });
-    }
-});
-
 // ========== ОБНОВЛЕНИЕ КОЛИЧЕСТВА ==========
 function updateQuantity(itemId, delta) {
     var input = document.getElementById('qty_' + itemId);
@@ -617,14 +628,11 @@ function updateQuantity(itemId, delta) {
     var maxValue = parseInt(input.dataset.max) || parseInt(input.max) || 999;
     var newValue = currentValue + delta;
 
-    // ✅ Не меньше 1
     if (newValue < 1) newValue = 1;
 
-    // ✅ Не больше доступного на складе
     if (newValue > maxValue) {
         newValue = maxValue;
-        // Показать сообщение пользователю
-        showMaxLimitMessage(maxValue);
+        alert('Доступно только ' + maxValue + ' шт. этого товара');
         return;
     }
 
@@ -643,12 +651,6 @@ function updateQuantity(itemId, delta) {
     });
 }
 
-// ✅ Сообщение о достижении лимита
-function showMaxLimitMessage(maxValue) {
-    // Простой вариант — alert
-    alert('Доступно только ' + maxValue + ' шт. этого товара');
-}
-
 // ========== УДАЛЕНИЕ ТОВАРА ==========
 function removeItem(itemId) {
     if (!confirm('Удалить товар из корзины?')) return;
@@ -658,17 +660,15 @@ function removeItem(itemId) {
     formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
 
     fetch(url, {
-        method: 'POST',          // ✅ POST, а не GET
+        method: 'POST',
         body: formData
-    })
-    .then(function(response) {
+    }).then(function(response) {
         if (response.ok) {
             location.reload();
         } else {
             alert('Не удалось удалить товар');
         }
-    })
-    .catch(function(err) {
+    }).catch(function(err) {
         console.error('Ошибка:', err);
         alert('Ошибка сети');
     });
@@ -677,10 +677,88 @@ function removeItem(itemId) {
 // ========== ПРОМОКОД ==========
 function applyPromo() {
     var code = document.getElementById('promoCode');
-    if (!code) return;
+    var message = document.getElementById('promoMessage');
+    if (!code || !message) return;
+
     var value = code.value.trim();
-    alert(value ? 'Промокод "' + value + '" применен!' : 'Введите промокод');
+
+    message.className = 'promo-message';
+    message.textContent = '';
+
+    if (!value) {
+        showPromoMessage('Введите промокод', 'error');
+        return;
+    }
+
+    var formData = new FormData();
+    formData.append('code', value);
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    fetch("{% url 'cart:apply_promo' %}", {
+        method: 'POST',
+        body: formData
+    })
+    .then(function(response) {
+        return response.json();
+    })
+    .then(function(data) {
+        if (data.success) {
+            showPromoMessage('✓ ' + data.message, 'success');
+            // Обновить итоговую сумму
+            var totalEl = document.querySelector('.cart-summary .summary-row.total .amount');
+            if (totalEl && data.new_total !== undefined) {
+                totalEl.textContent = data.new_total.toFixed(2) + ' BYN';
+            }
+        } else {
+            showPromoMessage('⚠ ' + (data.error || 'Ошибка'), 'error');
+        }
+    })
+    .catch(function(err) {
+        console.error('Ошибка:', err);
+        showPromoMessage('Ошибка сети', 'error');
+    });
 }
+
+// ✅ ЭТА ФУНКЦИЯ ДОЛЖНА БЫТЬ — без неё ошибка!
+function showPromoMessage(text, type) {
+    var message = document.getElementById('promoMessage');
+    if (!message) return;
+
+    var icon = type === 'success' ? '✓' : '⚠';
+    message.className = 'promo-message ' + type;
+    message.innerHTML = '<span class="message-icon">' + icon + '</span>' + text;
+}
+
+// ✅ И ЭТА ТОЖЕ
+function hidePromoMessage() {
+    var message = document.getElementById('promoMessage');
+    if (message) {
+        message.className = 'promo-message';
+        message.textContent = '';
+    }
+}
+
+// ========== ИНИЦИАЛИЗАЦИЯ ==========
+document.addEventListener('DOMContentLoaded', function() {
+    var input = document.getElementById('telegramInput');
+
+    if (input) {
+        input.addEventListener('input', function() {
+            hideError();
+            this.classList.remove('error');
+        });
+
+        input.addEventListener('focus', function() {
+            hideError();
+            this.classList.remove('error');
+        });
+    }
+
+    var promoInput = document.getElementById('promoCode');
+    if (promoInput) {
+        promoInput.addEventListener('input', hidePromoMessage);
+    }
+});
 
 console.log('✅ Скрипты загружены');
 </script>
