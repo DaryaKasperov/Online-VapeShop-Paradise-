@@ -75,7 +75,16 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-DEFAULT_FILE_STORAGE = 'vercel_blob.blob_store.BlobStore'
+
+
+STORAGES = {
+    "default": {
+        "BACKEND": "vercel_blob.blob_store.BlobStore",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 # AWS_ACCESS_KEY_ID = os.getenv('BLOB_READ_WRITE_TOKEN')
 
 LANGUAGE_CODE = 'ru-ru'
