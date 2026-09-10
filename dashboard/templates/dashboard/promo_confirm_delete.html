@@ -1,0 +1,16 @@
+{% extends 'dashboard/base.html' %}
+
+{% block title %}Удалить промокод{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <h1>Удалить промокод?</h1>
+    <p>Вы уверены, что хотите удалить промокод <strong>{{ promo.code }}</strong>?</p>
+
+    <form method="post">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-danger">Удалить</button>
+        <a href="{% url 'dashboard:promo_list' %}" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>
+{% endblock %}

@@ -199,6 +199,8 @@ class Order(models.Model):
     telegram = models.CharField('Telegram', max_length=100)
     comment = models.TextField('Комментарий', blank=True)
     status = models.CharField('Статус', max_length=20, choices=STATUS_CHOICES, default='pending')
+    promo_code = models.CharField('Промокод', max_length=50, blank=True, default='')
+    discount = models.DecimalField('Скидка', max_digits=10, decimal_places=2, default=0)
     total_price = models.DecimalField('Итого', max_digits=10, decimal_places=2, default=0)
     created_at = models.DateTimeField('Дата заказа', auto_now_add=True)
 

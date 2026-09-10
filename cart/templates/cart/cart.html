@@ -703,14 +703,14 @@ function applyPromo() {
     })
     .then(function(data) {
         if (data.success) {
-            showPromoMessage('✓ ' + data.message, 'success');
+            showPromoMessage( data.message, 'success');
             // Обновить итоговую сумму
             var totalEl = document.querySelector('.cart-summary .summary-row.total .amount');
             if (totalEl && data.new_total !== undefined) {
                 totalEl.textContent = data.new_total.toFixed(2) + ' BYN';
             }
         } else {
-            showPromoMessage('⚠ ' + (data.error || 'Ошибка'), 'error');
+            showPromoMessage((data.error || 'Ошибка'), 'error');
         }
     })
     .catch(function(err) {

@@ -6,7 +6,8 @@ from django.http import HttpResponse
 from catalog.models import Product, Category, Order, FlavorStock, ColorStock, BlockedUser
 from catalog.forms import ProductForm, CategoryForm
 
-
+from catalog.models import PromoCode
+from django.contrib.admin.views.decorators import staff_member_required
 
 # Проверка, что пользователь админ
 def is_admin(user):
@@ -332,3 +333,89 @@ def blocked_user_delete(request, user_id):
     blocked.delete()
     messages.success(request, f'Запись о блокировке @{telegram} удалена')
     return redirect('dashboard:blocked_users')
+
+@staff_member_required
+def promo_list(request):
+    """Список промокодов."""
+    promos = PromoCode.objects.all().order_by('-created_at')
+    return render(request, 'dashboard/promo_list.html', {'promos': promos})
+
+
+@staff_member_required
+def promo_create(request):
+    """Создание промокода."""
+    if request.method == 'POST':
+        code = request.POST.get('code', '').strip().upper()
+        discount_type = request.POST.get('discount_type', 'percent')
+        discount_value = request.POST.get('discount_value', '0')
+        min_order_amount = request.POST.get('min_order_amount', '0')
+        valid_from = request.POST.get('valid_from') or None
+        valid_until = request.POST.get('valid_until') or None
+        usage_limit = request.POST.get('usage_limit') or None
+        is_active = request.POST.get('is_active') == 'on'
+
+        # Проверка на дубликат
+        if PromoCode.objects.filter(code__iexact=code).exists():
+            messages.error(request, f'Промокод "{code}" уже существует')
+            return render(request, 'dashboard/promo_form.html', {
+                'data': request.POST,
+                'is_edit': False,
+            })
+
+        try:
+            PromoCode.objects.create(
+                code=code,
+                discount_type=discount_type,
+                discount_value=discount_value,
+                min_order_amount=min_order_amount,
+                valid_from=valid_from,
+                valid_until=valid_until,
+                usage_limit=usage_limit,
+                is_active=is_active,
+            )
+            messages.success(request, f'Промокод "{code}" создан')
+            return redirect('dashboard:promo_list')
+        except Exception as e:
+            messages.error(request, f'Ошибка: {e}')
+
+    return render(request, 'dashboard/promo_form.html', {'is_edit': False})
+
+
+@staff_member_required
+def promo_edit(request, promo_id):
+    """Редактирование промокода."""
+    promo = get_object_or_404(PromoCode, id=promo_id)
+
+    if request.method == 'POST':
+        promo.code = request.POST.get('code', '').strip().upper()
+        promo.discount_type = request.POST.get('discount_type', 'percent')
+        promo.discount_value = request.POST.get('discount_value', '0')
+        promo.min_order_amount = request.POST.get('min_order_amount', '0')
+        promo.valid_from = request.POST.get('valid_from') or None
+        promo.valid_until = request.POST.get('valid_until') or None
+        promo.usage_limit = request.POST.get('usage_limit') or None
+        promo.is_active = request.POST.get('is_active') == 'on'
+
+        try:
+            promo.save()
+            messages.success(request, f'Промокод "{promo.code}" обновлён')
+            return redirect('dashboard:promo_list')
+        except Exception as e:
+            messages.error(request, f'Ошибка: {e}')
+
+    return render(request, 'dashboard/promo_form.html', {
+        'promo': promo,
+        'is_edit': True,
+    })
+
+
+@staff_member_required
+def promo_delete(request, promo_id):
+    """Удаление промокода."""
+    promo = get_object_or_404(PromoCode, id=promo_id)
+    if request.method == 'POST':
+        code = promo.code
+        promo.delete()
+        messages.success(request, f'Промокод "{code}" удалён')
+        return redirect('dashboard:promo_list')
+    return render(request, 'dashboard/promo_confirm_delete.html', {'promo': promo})

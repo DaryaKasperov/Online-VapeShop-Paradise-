@@ -32,4 +32,9 @@ urlpatterns = [
     path('blocked/create/', views.blocked_user_create, name='blocked_user_create'),
     path('blocked/unblock/<int:user_id>/', views.blocked_user_unblock, name='blocked_user_unblock'),
     path('blocked/delete/<int:user_id>/', views.blocked_user_delete, name='blocked_user_delete'),
+
+    path('promos/', views.promo_list, name='promo_list'),
+    path('promos/create/', views.promo_create, name='promo_create'),
+    path('promos/<int:promo_id>/edit/', views.promo_edit, name='promo_edit'),
+    path('promos/<int:promo_id>/delete/', views.promo_delete, name='promo_delete'),
 ]

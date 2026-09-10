@@ -263,6 +263,9 @@
            href="{% url 'dashboard:orders' %}">
             <i class="fas fa-shopping-cart"></i> Заказы
         </a>
+         <a class="nav-link" href="{% url 'dashboard:promo_list' %}">
+        <i class="fas fa-tags"></i> Промокоды
+    </a>
         <a class="nav-link {% if 'blocked' in request.resolver_match.url_name %}active{% endif %}"
            href="{% url 'dashboard:blocked_users' %}">
             <i class="fas fa-ban"></i> Блокировка
@@ -272,14 +275,14 @@
 
     <!-- Основной контент -->
     <div class="main-content">
-        {% if messages %}
-            {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-                </div>
-            {% endfor %}
-        {% endif %}
+<!--        {% if messages %}-->
+<!--            {% for message in messages %}-->
+<!--                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">-->
+<!--                    {{ message }}-->
+<!--                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>-->
+<!--                </div>-->
+<!--            {% endfor %}-->
+<!--        {% endif %}-->
 
         {% block content %}
         {% endblock %}

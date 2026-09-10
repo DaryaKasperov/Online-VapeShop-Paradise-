@@ -1,22 +1,26 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.http import JsonResponse
+from django.views.decorators.http import require_POST
 from django.db import transaction
-from django.db.models import F  # ✅ ДОБАВЬ ЭТУ СТРОКУ!
+from django.db.models import F
+from decimal import Decimal
 import os
 import requests
 
-from decimal import Decimal
-
-
 # ✅ Импорты из catalog
-from catalog.models import Product, FlavorStock, ColorStock, Order, OrderItem, BlockedUser
+from catalog.models import (
+    Product, FlavorStock, ColorStock,
+    Order, OrderItem, BlockedUser, PromoCode
+)
 
 # ✅ Импорт из текущего приложения
 from .models import CartItem
 
-from django.views.decorators.http import require_POST
-from catalog.models import PromoCode
+
+# ============================================================
+# КОРЗИНА
+# ============================================================
 
 def cart_view(request):
     """Страница корзины"""
@@ -28,7 +32,7 @@ def cart_view(request):
         cart_items = CartItem.objects.filter(session_key=session_key).select_related('product')
         cart_total_price = sum(item.get_total_price() for item in cart_items)
 
-        # ✅ Добавляем max_quantity к каждому товару
+        # Добавляем max_quantity к каждому товару
         for item in cart_items:
             item.max_quantity = get_max_quantity(item)
 
@@ -42,7 +46,6 @@ def get_max_quantity(cart_item):
     """Возвращает максимально доступное количество для позиции корзины."""
     product = cart_item.product
 
-    # Если есть вкус — берём остаток по вкусу
     if cart_item.flavor:
         try:
             flavor_stock = product.flavor_stocks.get(flavor=cart_item.flavor)
@@ -50,7 +53,6 @@ def get_max_quantity(cart_item):
         except FlavorStock.DoesNotExist:
             return 0
 
-    # Если есть цвет — берём остаток по цвету
     if cart_item.color:
         try:
             color_stock = product.color_stocks.get(color=cart_item.color)
@@ -58,8 +60,8 @@ def get_max_quantity(cart_item):
         except ColorStock.DoesNotExist:
             return 0
 
-    # Иначе — простое количество товара
     return product.quantity
+
 
 def cart_add(request, product_id):
     """Добавление товара в корзину"""
@@ -158,6 +160,7 @@ def cart_add(request, product_id):
 
     return redirect('catalog:product_list')
 
+
 def cart_update(request, item_id):
     """Обновление количества товара в корзине (AJAX)"""
     if request.method == 'POST':
@@ -168,10 +171,8 @@ def cart_update(request, item_id):
         cart_item = get_object_or_404(CartItem, id=item_id, session_key=session_key)
         quantity = int(request.POST.get('quantity', 1))
 
-        # ✅ Получаем максимально доступное количество
+        # ✅ Ограничиваем по доступному количеству
         max_qty = get_max_quantity(cart_item)
-
-        # ✅ Ограничиваем
         if quantity > max_qty:
             quantity = max_qty
 
@@ -196,6 +197,7 @@ def cart_update(request, item_id):
 
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
 
+
 def cart_remove(request, item_id):
     """Удаление товара из корзины (AJAX)"""
     if request.method == 'POST':
@@ -216,9 +218,14 @@ def cart_remove(request, item_id):
 
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
 
-@require_POST
+
+# ============================================================
+# ПРОМОКОДЫ
+# ============================================================
+
 @require_POST
 def apply_promo(request):
+    """AJAX-проверка промокода."""
     code = request.POST.get('code', '').strip().upper()
 
     if not code:
@@ -232,7 +239,6 @@ def apply_promo(request):
     if not cart_items.exists():
         return JsonResponse({'success': False, 'error': 'Корзина пуста'})
 
-    # ✅ Используем Decimal вместо float
     total_price = sum(Decimal(str(item.get_total_price())) for item in cart_items)
 
     try:
@@ -247,6 +253,7 @@ def apply_promo(request):
     discount = promo.calculate_discount(total_price)
     new_total = max(Decimal('0'), total_price - discount)
 
+    # ✅ Сохраняем промокод и скидку в сессии
     request.session['promo_code'] = promo.code
     request.session['promo_discount'] = str(discount)
 
@@ -259,13 +266,17 @@ def apply_promo(request):
     })
 
 
+# ============================================================
+# TELEGRAM
+# ============================================================
+
 def send_telegram_notification(order):
-    """Отправка уведомления о заказе в Telegram"""
+    """Отправка уведомления о заказе в Telegram."""
     bot_token = os.getenv('TG_BOT_TOKEN')
     chat_id = os.getenv('TG_CHAT_ID')
 
     if not bot_token or not chat_id:
-        print('❌ Ошибка: TG_BOT_TOKEN или TG_CHAT_ID не заданы в .env')
+        print('❌ Ошибка: TG_BOT_TOKEN или TG_CHAT_ID не заданы')
         return False
 
     items_text = ""
@@ -279,12 +290,19 @@ def send_telegram_notification(order):
 
     telegram_link = f"https://t.me/{order.telegram}" if order.telegram else ""
 
+    # ✅ Блок со скидкой
+    discount_text = ""
+    if order.discount and float(order.discount) > 0:
+        discount_text = f"\n🎁 *Скидка:* -{order.discount} BYN"
+        if order.promo_code:
+            discount_text += f" (промокод: `{order.promo_code}`)"
+
     message = f"""
 🛍️ *НОВЫЙ ЗАКАЗ!* (№{order.id})
 
 📦 *Товары:*{items_text}
 
-💰 *Итого:* {order.total_price} BYN
+💰 *Итого:* {order.total_price} BYN{discount_text}
 📝 *Комментарий:* {order.comment or 'Нет'}
 
 👤 *Покупатель:* [{order.telegram}]({telegram_link})
@@ -309,15 +327,18 @@ def send_telegram_notification(order):
 
 
 def is_user_blocked(telegram):
-    """Проверка, заблокирован ли пользователь"""
+    """Проверка, заблокирован ли пользователь."""
     if not telegram:
         return False
     return BlockedUser.objects.filter(telegram=telegram, is_active=True).exists()
 
 
-# ✅ ОДНА ФУНКЦИЯ cart_checkout
+# ============================================================
+# ОФОРМЛЕНИЕ ЗАКАЗА
+# ============================================================
+
 def cart_checkout(request):
-    """Оформление заказа из корзины с проверкой блокировки"""
+    """Оформление заказа из корзины с проверкой блокировки."""
     session_key = request.session.session_key
     if not session_key:
         return redirect('cart:cart_view')
@@ -336,23 +357,28 @@ def cart_checkout(request):
             messages.error(request, 'Пожалуйста, введите ваш Telegram-ник')
             return redirect('cart:cart_view')
 
-        # ✅ ПРОВЕРКА БЛОКИРОВКИ
         if is_user_blocked(telegram):
             messages.error(request, f'❌ Пользователь @{telegram} заблокирован. Обратитесь к администратору.')
             return redirect('cart:cart_view')
+
+        # ✅ Получаем промокод и скидку из сессии
+        promo_code = request.session.get('promo_code', '')
+        discount = Decimal(str(request.session.get('promo_discount', '0')))
 
         try:
             with transaction.atomic():
                 order = Order.objects.create(
                     telegram=telegram,
                     comment=comment,
-                    total_price=0
+                    total_price=0,
+                    promo_code=promo_code,
+                    discount=discount,
                 )
 
                 total_price = 0
 
                 for item in cart_items:
-                    # ✅ СПИСЫВАЕМ ВКУСЫ
+                    # Списываем вкусы
                     if item.flavor:
                         try:
                             flavor_stock = FlavorStock.objects.select_for_update().get(
@@ -368,7 +394,7 @@ def cart_checkout(request):
                             messages.error(request, f'Вкус "{item.flavor}" не найден')
                             return redirect('cart:cart_view')
 
-                    # ✅ СПИСЫВАЕМ ЦВЕТА
+                    # Списываем цвета
                     if item.color:
                         try:
                             color_stock = ColorStock.objects.select_for_update().get(
@@ -384,7 +410,7 @@ def cart_checkout(request):
                             messages.error(request, f'Цвет "{item.color}" не найден')
                             return redirect('cart:cart_view')
 
-                    # ✅ СПИСЫВАЕМ ПРОСТОЕ КОЛИЧЕСТВО (если нет вкусов/цветов)
+                    # Списываем простое количество
                     if not item.flavor and not item.color:
                         product = Product.objects.select_for_update().get(id=item.product.id)
                         if product.quantity < item.quantity:
@@ -393,7 +419,7 @@ def cart_checkout(request):
                         product.quantity = F('quantity') - item.quantity
                         product.save(update_fields=['quantity'])
 
-                    # Создаем позицию заказа
+                    # Создаём позицию заказа
                     item_price = float(item.product.price) * item.quantity
                     OrderItem.objects.create(
                         order=order,
@@ -405,10 +431,23 @@ def cart_checkout(request):
                     )
                     total_price += item_price
 
+                # ✅ Применяем скидку
+                if discount > 0:
+                    total_price = max(0, float(total_price) - float(discount))
+
                 order.total_price = total_price
                 order.save()
 
-                # ✅ ОБНОВЛЯЕМ СТАТУС НАЛИЧИЯ
+                # ✅ Увеличиваем счётчик использований промокода
+                if promo_code:
+                    try:
+                        promo = PromoCode.objects.select_for_update().get(code__iexact=promo_code)
+                        promo.used_count = F('used_count') + 1
+                        promo.save(update_fields=['used_count'])
+                    except PromoCode.DoesNotExist:
+                        pass
+
+                # Обновляем статус наличия
                 for item in cart_items:
                     item.product.refresh_from_db()
                     item.product.in_stock = item.product.has_stock()
@@ -416,9 +455,13 @@ def cart_checkout(request):
 
                 cart_items.delete()
 
+                # ✅ Очищаем промокод из сессии
+                request.session.pop('promo_code', None)
+                request.session.pop('promo_discount', None)
+
                 send_telegram_notification(order)
 
-                messages.success(request, ' Заказ оформлен! Мы свяжемся с вами в Telegram.')
+                messages.success(request, 'Заказ оформлен! Мы свяжемся с вами в Telegram.')
                 return redirect('catalog:product_list')
 
         except Exception as e:
@@ -429,10 +472,12 @@ def cart_checkout(request):
 
 
 def cart_clear(request):
-    """Очистка корзины"""
+    """Очистка корзины."""
     session_key = request.session.session_key
     if session_key:
         CartItem.objects.filter(session_key=session_key).delete()
+        request.session.pop('promo_code', None)
+        request.session.pop('promo_discount', None)
         messages.info(request, 'Корзина очищена')
 
     return redirect('cart:cart_view')
