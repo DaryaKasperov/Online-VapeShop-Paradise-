@@ -15,8 +15,46 @@ from .models import CartItem
 
 def cart_view(request):
     """Страница корзины"""
-    return render(request, 'cart/cart.html')
+    session_key = request.session.session_key
+    cart_items = []
+    cart_total_price = 0
 
+    if session_key:
+        cart_items = CartItem.objects.filter(session_key=session_key).select_related('product')
+        cart_total_price = sum(item.get_total_price() for item in cart_items)
+
+        # ✅ Добавляем max_quantity к каждому товару
+        for item in cart_items:
+            item.max_quantity = get_max_quantity(item)
+
+    return render(request, 'cart/cart.html', {
+        'cart_items': cart_items,
+        'cart_total_price': cart_total_price,
+    })
+
+
+def get_max_quantity(cart_item):
+    """Возвращает максимально доступное количество для позиции корзины."""
+    product = cart_item.product
+
+    # Если есть вкус — берём остаток по вкусу
+    if cart_item.flavor:
+        try:
+            flavor_stock = product.flavor_stocks.get(flavor=cart_item.flavor)
+            return flavor_stock.quantity
+        except FlavorStock.DoesNotExist:
+            return 0
+
+    # Если есть цвет — берём остаток по цвету
+    if cart_item.color:
+        try:
+            color_stock = product.color_stocks.get(color=cart_item.color)
+            return color_stock.quantity
+        except ColorStock.DoesNotExist:
+            return 0
+
+    # Иначе — простое количество товара
+    return product.quantity
 
 def cart_add(request, product_id):
     """Добавление товара в корзину"""
@@ -115,35 +153,43 @@ def cart_add(request, product_id):
 
     return redirect('catalog:product_list')
 
-
 def cart_update(request, item_id):
     """Обновление количества товара в корзине (AJAX)"""
     if request.method == 'POST':
         session_key = request.session.session_key
-        if session_key:
-            cart_item = get_object_or_404(CartItem, id=item_id, session_key=session_key)
-            quantity = int(request.POST.get('quantity', 1))
+        if not session_key:
+            return JsonResponse({'success': False, 'error': 'Сессия не найдена'}, status=400)
 
-            if quantity > 0:
-                cart_item.quantity = quantity
-                cart_item.save()
-            else:
-                cart_item.delete()
+        cart_item = get_object_or_404(CartItem, id=item_id, session_key=session_key)
+        quantity = int(request.POST.get('quantity', 1))
 
-            cart_items = CartItem.objects.filter(session_key=session_key)
-            total_items = sum(item.quantity for item in cart_items)
-            total_price = sum(item.get_total_price() for item in cart_items)
+        # ✅ Получаем максимально доступное количество
+        max_qty = get_max_quantity(cart_item)
 
-            return JsonResponse({
-                'success': True,
-                'quantity': cart_item.quantity if quantity > 0 else 0,
-                'item_total': float(cart_item.get_total_price()) if quantity > 0 else 0,
-                'cart_total': float(total_price),
-                'cart_count': total_items,
-            })
+        # ✅ Ограничиваем
+        if quantity > max_qty:
+            quantity = max_qty
+
+        if quantity > 0:
+            cart_item.quantity = quantity
+            cart_item.save()
+        else:
+            cart_item.delete()
+
+        cart_items = CartItem.objects.filter(session_key=session_key)
+        total_items = sum(item.quantity for item in cart_items)
+        total_price = sum(item.get_total_price() for item in cart_items)
+
+        return JsonResponse({
+            'success': True,
+            'quantity': cart_item.quantity if quantity > 0 else 0,
+            'max_quantity': max_qty,
+            'item_total': float(cart_item.get_total_price()) if quantity > 0 else 0,
+            'cart_total': float(total_price),
+            'cart_count': total_items,
+        })
 
     return JsonResponse({'success': False, 'error': 'Invalid request'}, status=400)
-
 
 def cart_remove(request, item_id):
     """Удаление товара из корзины (AJAX)"""

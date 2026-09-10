@@ -5,7 +5,7 @@
 
 {% block extra_css %}
 <style>
-    /* ========== СТИЛИ КОРЗИНЫ ========== */
+    /* ========== СТРАНИЦА ========== */
     .cart-page {
         padding: 20px 0;
     }
@@ -17,26 +17,33 @@
         letter-spacing: -0.02em;
     }
 
-    /* ========== КАРТОЧКИ ТОВАРОВ ========== */
+    /* ========== КАРТОЧКА ТОВАРА (две строки) ========== */
     .cart-item {
         display: flex;
-        align-items: center;
+        flex-direction: column;
+        gap: 12px;
         padding: 20px 0;
         border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-        gap: 20px;
     }
 
     .cart-item:last-child {
         border-bottom: none;
     }
 
+    /* ----- Первая строка: картинка + название ----- */
+    .cart-item-top {
+        display: flex;
+        align-items: center;
+        gap: 16px;
+    }
+
     .cart-item-image {
         width: 80px;
         height: 80px;
+        flex: 0 0 80px;
         border-radius: 12px;
         object-fit: cover;
         background: rgba(255, 255, 255, 0.05);
-        flex-shrink: 0;
         overflow: hidden;
     }
 
@@ -44,23 +51,39 @@
         width: 100%;
         height: 100%;
         object-fit: cover;
+        display: block;
     }
 
     .cart-item-info {
-        flex: 1;
+        flex: 1 1 auto;
         min-width: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
     }
 
     .cart-item-name {
         font-size: 1rem;
         font-weight: 600;
         color: #ffffff;
-        margin-bottom: 2px;
+        line-height: 1.35;
+        word-break: normal;
+        overflow-wrap: break-word;
+        white-space: normal;
     }
 
     .cart-item-desc {
         font-size: 0.85rem;
         color: var(--text-muted);
+    }
+
+    /* ----- Вторая строка: цена + кнопки ----- */
+    .cart-item-bottom {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+        padding-left: 96px; /* 80px картинка + 16px отступ */
     }
 
     .cart-item-price {
@@ -74,6 +97,7 @@
         display: flex;
         align-items: center;
         gap: 12px;
+        flex-shrink: 0;
     }
 
     .cart-item-actions .qty-btn {
@@ -105,16 +129,13 @@
         font-size: 1rem;
         font-weight: 600;
         outline: none;
+        -moz-appearance: textfield;
     }
 
     .cart-item-actions .qty-input::-webkit-outer-spin-button,
     .cart-item-actions .qty-input::-webkit-inner-spin-button {
         -webkit-appearance: none;
         margin: 0;
-    }
-
-    .cart-item-actions .qty-input {
-        -moz-appearance: textfield;
     }
 
     .cart-item-remove {
@@ -205,7 +226,7 @@
         color: #4fc3f7;
     }
 
-    /* ========== ПОЛЕ TELEGRAM ========== */
+    /* ========== TELEGRAM ========== */
     .telegram-field {
         margin-top: 16px;
     }
@@ -260,14 +281,6 @@
         color: var(--text-muted);
     }
 
-    .telegram-field small {
-        color: var(--text-muted);
-        font-size: 0.75rem;
-        display: block;
-        margin-top: 4px;
-    }
-
-    /* ========== ОШИБКА ПОД ПОЛЕМ ========== */
     #telegramError {
         display: none;
         margin-top: 8px;
@@ -275,10 +288,6 @@
         border-radius: 8px;
         font-size: 0.9rem;
         animation: errorSlideDown 0.3s ease forwards;
-    }
-
-    #telegramError .error-icon {
-        margin-right: 10px;
     }
 
     @keyframes errorSlideDown {
@@ -365,14 +374,14 @@
 
     /* ========== АДАПТАЦИЯ ========== */
     @media (max-width: 768px) {
-        .cart-item {
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-
         .cart-item-image {
             width: 60px;
             height: 60px;
+            flex: 0 0 60px;
+        }
+
+        .cart-item-bottom {
+            padding-left: 76px;
         }
 
         .cart-item-price {
@@ -412,40 +421,47 @@
                 <div class="cart-items">
                     {% for item in cart_items %}
                     <div class="cart-item">
-                        <div class="cart-item-image">
-                            {% if item.product.image %}
-                            <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
-                            {% else %}
-                            <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
-                                <i class="fas fa-image"></i>
-                            </div>
-                            {% endif %}
-                        </div>
 
-                        <div class="cart-item-info">
-                            <div class="cart-item-name">{{ item.product.name }}</div>
-                            <div class="cart-item-desc">
-                                {% if item.flavor %}
-                                    Вкус: {{ item.flavor }}
-                                {% elif item.color %}
-                                    Цвет: {{ item.color }}
+                        <!-- Первая строка: картинка + название -->
+                        <div class="cart-item-top">
+                            <div class="cart-item-image">
+                                {% if item.product.image %}
+                                <img src="{{ item.product.image.url }}" alt="{{ item.product.name }}">
                                 {% else %}
-
+                                <div style="width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; color: var(--text-muted);">
+                                    <i class="fas fa-image"></i>
+                                </div>
                                 {% endif %}
                             </div>
+
+                            <div class="cart-item-info">
+                                <div class="cart-item-name">{{ item.product.name }}</div>
+                                <div class="cart-item-desc">
+                                    {% if item.flavor %}
+                                        Вкус: {{ item.flavor }}
+                                    {% elif item.color %}
+                                        Цвет: {{ item.color }}
+                                    {% endif %}
+                                </div>
+                            </div>
                         </div>
 
-                        <div class="cart-item-price">{{ item.product.price }} BYN</div>
+                        <!-- Вторая строка: цена + кнопки -->
+                        <div class="cart-item-bottom">
+                            <div class="cart-item-price">{{ item.product.price }} BYN</div>
 
-                        <div class="cart-item-actions">
+                            <div class="cart-item-actions">
                             <button class="qty-btn" onclick="updateQuantity({{ item.id }}, -1)">−</button>
                             <input type="number" class="qty-input" id="qty_{{ item.id }}"
-                                   value="{{ item.quantity }}" min="1" readonly>
+                                   value="{{ item.quantity }}" min="1"
+                                   max="{{ item.max_quantity }}"
+                                   data-max="{{ item.max_quantity }}" readonly>
                             <button class="qty-btn" onclick="updateQuantity({{ item.id }}, 1)">+</button>
                             <button class="cart-item-remove" onclick="removeItem({{ item.id }})">
                                 <i class="fas fa-times"></i>
                             </button>
                         </div>
+
                     </div>
                     {% endfor %}
                 </div>
@@ -467,23 +483,22 @@
                         <span class="amount">{{ cart_total_price }} BYN</span>
                     </div>
 
-                    <!-- ========== TELEGRAM ДЛЯ СВЯЗИ ========== -->
-<div class="telegram-field">
-    <label for="telegramInput">
-        <i class="fab fa-telegram-plane" style="color: var(--glow-blue);"></i>
-        Telegram-ник <span style="color: #ff4444;">*</span>
-    </label>
-    <div class="input-group">
-        <span class="input-group-text">@</span>
-        <input type="text" id="telegramInput" class="form-control"
-               placeholder="ваш_никнейм" required>
-    </div>
-    <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 4px;">
-        <i class="fas fa-info-circle"></i> Введите ваш Telegram-ник без @
-    </small>
-    <!-- ✅ БЛОК ОШИБКИ ПОД ПОЛЕМ -->
-    <div id="telegramError" style="display: none; color: #ff4444; margin-top: 8px;"></div>
-</div>
+                    <!-- Telegram для связи -->
+                    <div class="telegram-field">
+                        <label for="telegramInput">
+                            <i class="fab fa-telegram-plane" style="color: var(--glow-blue);"></i>
+                            Telegram-ник <span style="color: #ff4444;">*</span>
+                        </label>
+                        <div class="input-group">
+                            <span class="input-group-text">@</span>
+                            <input type="text" id="telegramInput" class="form-control"
+                                   placeholder="ваш_никнейм" required>
+                        </div>
+                        <small style="color: var(--text-muted); font-size: 0.75rem; display: block; margin-top: 4px;">
+                            <i class="fas fa-info-circle"></i> Введите ваш Telegram-ник без @
+                        </small>
+                        <div id="telegramError" style="display: none; color: #ff4444; margin-top: 8px;"></div>
+                    </div>
 
                     <form method="post" action="{% url 'cart:cart_checkout' %}" id="checkoutForm">
                         {% csrf_token %}
@@ -497,6 +512,7 @@
                 <a href="{% url 'catalog:product_list' %}" class="back-link">
                     <i class="fas fa-arrow-left"></i> Продолжить покупки
                 </a>
+
             {% else %}
                 <!-- Пустая корзина -->
                 <div class="cart-empty">
@@ -574,6 +590,7 @@ function checkout() {
     hiddenInput.value = value;
     document.getElementById('checkoutForm').submit();
 }
+
 // ========== СКРЫТИЕ ОШИБКИ ПРИ ВВОДЕ ==========
 document.addEventListener('DOMContentLoaded', function() {
     var input = document.getElementById('telegramInput');
@@ -596,8 +613,20 @@ function updateQuantity(itemId, delta) {
     var input = document.getElementById('qty_' + itemId);
     if (!input) return;
 
-    var newValue = parseInt(input.value) + delta;
+    var currentValue = parseInt(input.value);
+    var maxValue = parseInt(input.dataset.max) || parseInt(input.max) || 999;
+    var newValue = currentValue + delta;
+
+    // ✅ Не меньше 1
     if (newValue < 1) newValue = 1;
+
+    // ✅ Не больше доступного на складе
+    if (newValue > maxValue) {
+        newValue = maxValue;
+        // Показать сообщение пользователю
+        showMaxLimitMessage(maxValue);
+        return;
+    }
 
     var url = "{% url 'cart:cart_update' 0 %}".replace('0', itemId);
     var formData = new FormData();
@@ -614,11 +643,35 @@ function updateQuantity(itemId, delta) {
     });
 }
 
+// ✅ Сообщение о достижении лимита
+function showMaxLimitMessage(maxValue) {
+    // Простой вариант — alert
+    alert('Доступно только ' + maxValue + ' шт. этого товара');
+}
+
 // ========== УДАЛЕНИЕ ТОВАРА ==========
 function removeItem(itemId) {
-    if (confirm('Удалить товар из корзины?')) {
-        window.location.href = "{% url 'cart:cart_remove' 0 %}".replace('0', itemId);
-    }
+    if (!confirm('Удалить товар из корзины?')) return;
+
+    var url = "{% url 'cart:cart_remove' 0 %}".replace('0', itemId);
+    var formData = new FormData();
+    formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+    fetch(url, {
+        method: 'POST',          // ✅ POST, а не GET
+        body: formData
+    })
+    .then(function(response) {
+        if (response.ok) {
+            location.reload();
+        } else {
+            alert('Не удалось удалить товар');
+        }
+    })
+    .catch(function(err) {
+        console.error('Ошибка:', err);
+        alert('Ошибка сети');
+    });
 }
 
 // ========== ПРОМОКОД ==========
@@ -627,13 +680,6 @@ function applyPromo() {
     if (!code) return;
     var value = code.value.trim();
     alert(value ? 'Промокод "' + value + '" применен!' : 'Введите промокод');
-}
-
-// Скрываем ошибку при вводе
-var inputField = document.getElementById('telegramInput');
-if (inputField) {
-    inputField.addEventListener('input', hideError);
-    inputField.addEventListener('focus', hideError);
 }
 
 console.log('✅ Скрипты загружены');
