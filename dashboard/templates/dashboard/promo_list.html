@@ -7,10 +7,10 @@
 <div class="container mt-4">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h1>Промокоды</h1>
-        <a href="{% url 'dashboard:promo_create' %}" class="btn btn-primary">
-            <i class="fas fa-plus"></i> Создать промокод
-        </a>
     </div>
+        <a href="{% url 'dashboard:promo_create' %}" class="btn btn-primary mb-4">
+            <i class="fas fa-plus "></i> Создать промокод
+        </a>
 
     {% if messages %}
         {% for message in messages %}
