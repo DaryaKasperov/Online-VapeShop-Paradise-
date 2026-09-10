@@ -28,6 +28,7 @@ INSTALLED_APPS = [
     'django_filters',
     'dashboard',
     'cart',
+    'storages',
 ]
 
 MIDDLEWARE = [
@@ -79,12 +80,26 @@ STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 STORAGES = {
     "default": {
-        "BACKEND": "vercel_blob.blob_store.BlobStore",
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "OPTIONS": {
+            "access_key": os.getenv('B2_APPLICATION_KEY_ID'),
+            "secret_key": os.getenv('B2_APPLICATION_KEY'),
+            "bucket_name": os.getenv('B2_BUCKET_NAME'),
+            "region_name": os.getenv('B2_REGION'),
+            "endpoint_url": f"https://s3.{os.getenv('B2_REGION')}.backblazeb2.com",
+            "file_overwrite": False,
+            # "default_acl": "public-read",  # НЕ НУЖНО для приватного бакета
+            "querystring_auth": True,  # Включает pre-signed URLs
+            "querystring_expire": 3600,  # Время жизни ссылки (1 час)
+        },
     },
     "staticfiles": {
         "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
     },
 }
+
+# URL для доступа к медиафайлам (будет генерировать pre-signed URL)
+MEDIA_URL = f"https://{os.getenv('B2_BUCKET_NAME')}.s3.{os.getenv('B2_REGION')}.backblazeb2.com/"
 # AWS_ACCESS_KEY_ID = os.getenv('BLOB_READ_WRITE_TOKEN')
 
 LANGUAGE_CODE = 'ru-ru'
