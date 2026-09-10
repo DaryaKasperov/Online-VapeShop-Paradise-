@@ -2,7 +2,6 @@
 import os
 import sys
 import dj_database_url
-from vercel_blob import BlobStorage
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -77,7 +76,7 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
-# DEFAULT_FILE_STORAGE = 'storages.backends.vercel_blob.VercelBlobStorage'
+DEFAULT_FILE_STORAGE = 'vercel_blob.blob_store.BlobStore'
 # AWS_ACCESS_KEY_ID = os.getenv('BLOB_READ_WRITE_TOKEN')
 
 LANGUAGE_CODE = 'ru-ru'
