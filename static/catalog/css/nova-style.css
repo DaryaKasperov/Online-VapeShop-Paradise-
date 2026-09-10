@@ -1168,8 +1168,12 @@ footer p {
     }
 
     .navbar-toggler {
-        border-color: rgba(255, 255, 255, 0.3);
+        border: none !important;
         padding: 8px 10px;
+    }
+    .navbar-toggler:focus{
+    box-shadow:none !important;
+
     }
 
     .navbar-toggler-icon {
